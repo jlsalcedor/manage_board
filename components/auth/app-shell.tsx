@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback } from "react"
 import dynamic from "next/dynamic"
 import { Loader2 } from "lucide-react"
 import { LoginForm } from "./login-form"
+import { useKanbanStorage } from "@/hooks/use-kanban-storage"
+import { BoardsDashboard } from "@/components/kanban/boards-dashboard"
 
 const KanbanBoard = dynamic(
   () =>
@@ -32,6 +34,50 @@ function getSessionFromCookie(): boolean {
   } catch {
     return false
   }
+}
+
+function MainApp({ onLogout }: { onLogout: () => void }) {
+  const { boards, isLoading, addBoard, deleteBoard, renameBoard, updateBoardColumns } = useKanbanStorage()
+  const [selectedBoardId, setSelectedBoardId] = useState<string | null>(null)
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="size-8 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">Cargando tableros...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (selectedBoardId) {
+    const selectedBoard = boards.find(b => b.id === selectedBoardId)
+    if (!selectedBoard) {
+      setSelectedBoardId(null)
+      return null
+    }
+
+    return (
+      <KanbanBoard 
+        board={selectedBoard} 
+        updateColumns={(updater) => updateBoardColumns(selectedBoardId, updater)} 
+        onBack={() => setSelectedBoardId(null)}
+        onLogout={onLogout} 
+      />
+    )
+  }
+
+  return (
+    <BoardsDashboard 
+      boards={boards} 
+      onSelectBoard={setSelectedBoardId} 
+      onAddBoard={addBoard} 
+      onDeleteBoard={deleteBoard} 
+      onRenameBoard={renameBoard} 
+      onLogout={onLogout} 
+    />
+  )
 }
 
 export function AppShell() {
@@ -75,5 +121,5 @@ export function AppShell() {
     return <LoginForm onLogin={() => setAuthState("authenticated")} />
   }
 
-  return <KanbanBoard onLogout={handleLogout} />
+  return <MainApp onLogout={handleLogout} />
 }

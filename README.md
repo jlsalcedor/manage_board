@@ -7,11 +7,12 @@ Una aplicación web de gestión de tareas estilo Kanban moderna y rápida, const
 
 ## 🚀 Características
 
-- **Tablero Kanban Interactivo:** Organiza tus tareas en columnas de forma visual.
+- **Gestión de Múltiples Tableros:** Crea, renombra, elimina y navega entre tableros independientes desde un Dashboard centralizado. Cada tablero aloja su propio progreso.
+- **Tableros Kanban Interactivos:** Organiza tus tareas en columnas personalizadas de forma visual e independiente para cada tablero.
 - **Drag & Drop:** Sistema fluido de arrastrar y soltar soportado por `@dnd-kit` permitiendo mover tareas entre columnas fácilmente.
 - **Diseño Moderno y Accesible:** Componentes de interfaz de usuario de alta calidad gracias a **shadcn/ui** y **Radix UI**.
 - **Responsive:** Diseño adaptable que funciona tanto en escritorio como en dispositivos móviles, impulsado por **Tailwind CSS**.
-- **Almacenamiento Local (Sin DB):** Toda la persistencia de datos ocurre automáticamente en el archivo local `data/bd_petmain.json`.
+- **Almacenamiento Local (Sin DB):** Toda la persistencia de datos (incluyendo todos tus tableros, columnas y tareas) ocurre automáticamente en el archivo local `data/bd_petmain.json`.
 
 ## 🛠️ Tecnologías Utilizadas
 

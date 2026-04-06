@@ -16,22 +16,22 @@ import {
 import {
   sortableKeyboardCoordinates,
 } from "@dnd-kit/sortable"
-import { Loader2, Plus } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { Plus } from "lucide-react"
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { BoardHeader } from "./board-header"
-import { KanbanColumn } from "./kanban-column"
+import { KanbanColumn as KanbanColumnComponent } from "./kanban-column"
 import { AddStoryDialog } from "./add-story-dialog"
 import { AddColumnDialog } from "./add-column-dialog"
-import { useKanbanStorage } from "@/hooks/use-kanban-storage"
-import type { UserStory } from "@/lib/kanban-types"
+import type { UserStory, KanbanBoardData, KanbanColumn } from "@/lib/kanban-types"
 
 interface KanbanBoardProps {
+  board: KanbanBoardData
+  updateColumns: (updater: KanbanColumn[] | ((prev: KanbanColumn[]) => KanbanColumn[])) => void
+  onBack: () => void
   onLogout?: () => void
 }
 
-export function KanbanBoard({ onLogout }: KanbanBoardProps) {
-  const { board, setBoard, resetBoard, isLoading } = useKanbanStorage()
+export function KanbanBoard({ board, updateColumns, onBack, onLogout }: KanbanBoardProps) {
   const [activeStory, setActiveStory] = useState<UserStory | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [addStoryColumnId, setAddStoryColumnId] = useState<string | null>(null)
@@ -46,15 +46,17 @@ export function KanbanBoard({ onLogout }: KanbanBoardProps) {
     })
   )
 
+  const columns = board.columns
+
   const totalStories = useMemo(
-    () => board.reduce((sum, col) => sum + col.stories.length, 0),
-    [board]
+    () => columns.reduce((sum, col) => sum + col.stories.length, 0),
+    [columns]
   )
 
-  const filteredBoard = useMemo(() => {
-    if (!searchQuery.trim()) return board
+  const filteredColumns = useMemo(() => {
+    if (!searchQuery.trim()) return columns
     const query = searchQuery.toLowerCase()
-    return board.map((col) => ({
+    return columns.map((col) => ({
       ...col,
       stories: col.stories.filter(
         (s) =>
@@ -64,15 +66,15 @@ export function KanbanBoard({ onLogout }: KanbanBoardProps) {
           s.tags.some((t) => t.toLowerCase().includes(query))
       ),
     }))
-  }, [board, searchQuery])
+  }, [columns, searchQuery])
 
   const findColumnByStoryId = useCallback(
     (storyId: string) => {
-      return board.find((col) =>
+      return columns.find((col) =>
         col.stories.some((s) => s.id === storyId)
       )
     },
-    [board]
+    [columns]
   )
 
   const handleDragStart = useCallback(
@@ -99,14 +101,14 @@ export function KanbanBoard({ onLogout }: KanbanBoardProps) {
       if (!activeColumn) return
 
       // Check if we're over a column directly
-      const overColumn = board.find((col) => col.id === overId)
+      const overColumn = columns.find((col) => col.id === overId)
       // Or over a story in a column
       const overStoryColumn = findColumnByStoryId(overId)
 
       const targetColumn = overColumn || overStoryColumn
       if (!targetColumn || activeColumn.id === targetColumn.id) return
 
-      setBoard((prev) => {
+      updateColumns((prev) => {
         const activeColIndex = prev.findIndex((c) => c.id === activeColumn.id)
         const targetColIndex = prev.findIndex((c) => c.id === targetColumn.id)
 
@@ -140,7 +142,7 @@ export function KanbanBoard({ onLogout }: KanbanBoardProps) {
         return newBoard
       })
     },
-    [board, findColumnByStoryId]
+    [columns, findColumnByStoryId, updateColumns]
   )
 
   const handleDragEnd = useCallback(
@@ -162,10 +164,10 @@ export function KanbanBoard({ onLogout }: KanbanBoardProps) {
       const overInSameColumn = column.stories.some((s) => s.id === overId)
       if (!overInSameColumn) return
 
-      setBoard((prev) => {
+      updateColumns((prev) => {
         const colIndex = prev.findIndex((c) => c.id === column.id)
         const oldIndex = prev[colIndex].stories.findIndex(
-          (s) => s.id === activeId
+           (s) => s.id === activeId
         )
         const newIndex = prev[colIndex].stories.findIndex(
           (s) => s.id === overId
@@ -180,7 +182,7 @@ export function KanbanBoard({ onLogout }: KanbanBoardProps) {
         return newBoard
       })
     },
-    [findColumnByStoryId]
+    [findColumnByStoryId, updateColumns]
   )
 
   const handleAddStory = useCallback(
@@ -193,7 +195,7 @@ export function KanbanBoard({ onLogout }: KanbanBoardProps) {
         createdAt: new Date().toISOString().split("T")[0],
       }
 
-      setBoard((prev) =>
+      updateColumns((prev) =>
         prev.map((col) =>
           col.id === addStoryColumnId
             ? { ...col, stories: [...col.stories, newStory] }
@@ -202,61 +204,56 @@ export function KanbanBoard({ onLogout }: KanbanBoardProps) {
       )
       setAddStoryColumnId(null)
     },
-    [addStoryColumnId]
+    [addStoryColumnId, updateColumns]
   )
 
   const handleDeleteStory = useCallback((storyId: string) => {
-    setBoard((prev) =>
+    updateColumns((prev) =>
       prev.map((col) => ({
         ...col,
         stories: col.stories.filter((s) => s.id !== storyId),
       }))
     )
-  }, [])
+  }, [updateColumns])
 
   const handleAddColumn = useCallback((title: string, color: string) => {
-    const newColumn = {
+    const newColumn: KanbanColumn = {
       id: `col-${Date.now()}`,
       title,
       color,
       stories: [],
     }
-    setBoard((prev) => [...prev, newColumn])
-  }, [])
+    updateColumns((prev) => [...prev, newColumn])
+  }, [updateColumns])
 
   const handleDeleteColumn = useCallback((columnId: string) => {
-    setBoard((prev) => prev.filter((col) => col.id !== columnId))
-  }, [])
+    updateColumns((prev) => prev.filter((col) => col.id !== columnId))
+  }, [updateColumns])
 
   const handleRenameColumn = useCallback(
     (columnId: string, newTitle: string) => {
-      setBoard((prev) =>
+      updateColumns((prev) =>
         prev.map((col) =>
           col.id === columnId ? { ...col, title: newTitle } : col
         )
       )
     },
-    []
+    [updateColumns]
   )
 
-  if (isLoading) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-3">
-          <Loader2 className="size-8 animate-spin text-primary" />
-          <p className="text-sm text-muted-foreground">Cargando tablero...</p>
-        </div>
-      </div>
-    )
-  }
+  const handleResetBoard = useCallback(() => {
+    updateColumns((prev) => prev.map(col => ({ ...col, stories: [] })))
+  }, [updateColumns])
 
   return (
     <div className="flex h-screen flex-col bg-background">
       <BoardHeader
+        title={board.title}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         totalStories={totalStories}
-        onReset={resetBoard}
+        onReset={handleResetBoard}
+        onBack={onBack}
         onLogout={onLogout}
       />
 
@@ -269,8 +266,8 @@ export function KanbanBoard({ onLogout }: KanbanBoardProps) {
       >
         <ScrollArea className="flex-1">
           <div className="flex gap-4 p-6 h-[calc(100vh-73px)]">
-            {filteredBoard.map((column) => (
-              <KanbanColumn
+            {filteredColumns.map((column) => (
+              <KanbanColumnComponent
                 key={column.id}
                 column={column}
                 onAddStory={(colId) => setAddStoryColumnId(colId)}

@@ -1,70 +1,107 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef } from "react"
-import type { BoardState } from "@/lib/kanban-types"
+import type { AppState, KanbanBoardData, KanbanColumn } from "@/lib/kanban-types"
 
-const EMPTY_BOARD: BoardState = []
+const EMPTY_APP_STATE: AppState = []
 
-async function fetchBoard(): Promise<BoardState> {
+async function fetchAppState(): Promise<AppState> {
   try {
     const res = await fetch("/api/board")
-    console.log("[v0] fetchBoard response status:", res.status)
-    if (!res.ok) return EMPTY_BOARD
+    console.log("[v0] fetchAppState response status:", res.status)
+    if (!res.ok) return EMPTY_APP_STATE
     const data = await res.json()
-    console.log("[v0] fetchBoard data:", JSON.stringify(data).slice(0, 200))
-    return Array.isArray(data) ? data : EMPTY_BOARD
+    console.log("[v0] fetchAppState data length:", Array.isArray(data) ? data.length : 0)
+    // Check if it's an old BoardState (columns directly) or AppState (boards)
+    // We assume it's correctly migrated or starting empty as agreed.
+    return Array.isArray(data) ? data : EMPTY_APP_STATE
   } catch (err) {
-    console.log("[v0] fetchBoard error:", err)
-    return EMPTY_BOARD
+    console.log("[v0] fetchAppState error:", err)
+    return EMPTY_APP_STATE
   }
 }
 
-async function persistBoard(board: BoardState) {
+async function persistAppState(appState: AppState) {
   try {
-    console.log("[v0] persistBoard called, columns:", board.length, "stories:", board.reduce((s, c) => s + c.stories.length, 0))
     const res = await fetch("/api/board", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(board),
+      body: JSON.stringify(appState),
     })
     const result = await res.json()
-    console.log("[v0] persistBoard result:", result)
+    console.log("[v0] persistAppState result:", result)
   } catch (err) {
-    console.log("[v0] persistBoard error:", err)
+    console.log("[v0] persistAppState error:", err)
   }
 }
 
 export function useKanbanStorage() {
-  const [board, setBoardState] = useState<BoardState>(EMPTY_BOARD)
+  const [boards, setBoardsState] = useState<AppState>(EMPTY_APP_STATE)
   const [isLoading, setIsLoading] = useState(true)
   const initialized = useRef(false)
 
   // Load from JSON file on mount
   useEffect(() => {
-    fetchBoard().then((data) => {
-      setBoardState(data)
+    fetchAppState().then((data) => {
+      setBoardsState(data)
       setIsLoading(false)
       initialized.current = true
     })
   }, [])
 
-  // Persist to JSON file whenever board changes (skip initial load)
+  // Persist to JSON file whenever boards state changes (skip initial load)
   useEffect(() => {
     if (!initialized.current) return
-    persistBoard(board)
-  }, [board])
+    persistAppState(boards)
+  }, [boards])
 
-  const setBoard = useCallback(
-    (updater: BoardState | ((prev: BoardState) => BoardState)) => {
-      setBoardState(updater)
+  const addBoard = useCallback((title: string) => {
+    const newBoard: KanbanBoardData = {
+      id: `board-${Date.now()}`,
+      title,
+      columns: [],
+      createdAt: new Date().toISOString(),
+    }
+    setBoardsState((prev) => [...prev, newBoard])
+  }, [])
+
+  const deleteBoard = useCallback((id: string) => {
+    setBoardsState((prev) => prev.filter((b) => b.id !== id))
+  }, [])
+
+  const renameBoard = useCallback((id: string, newTitle: string) => {
+    setBoardsState((prev) =>
+      prev.map((b) => (b.id === id ? { ...b, title: newTitle } : b))
+    )
+  }, [])
+
+  const updateBoardColumns = useCallback(
+    (boardId: string, updater: KanbanColumn[] | ((prev: KanbanColumn[]) => KanbanColumn[])) => {
+      setBoardsState((prev) =>
+        prev.map((b) => {
+          if (b.id === boardId) {
+            const newColumns = typeof updater === "function" ? updater(b.columns) : updater
+            return { ...b, columns: newColumns }
+          }
+          return b
+        })
+      )
     },
     []
   )
 
-  const resetBoard = useCallback(() => {
-    setBoardState(EMPTY_BOARD)
-    persistBoard(EMPTY_BOARD)
+  const resetAll = useCallback(() => {
+    setBoardsState(EMPTY_APP_STATE)
+    persistAppState(EMPTY_APP_STATE)
   }, [])
 
-  return { board, setBoard, resetBoard, isLoading }
+  return { 
+    boards, 
+    isLoading, 
+    addBoard, 
+    deleteBoard, 
+    renameBoard, 
+    updateBoardColumns, 
+    resetAll 
+  }
 }

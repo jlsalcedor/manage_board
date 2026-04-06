@@ -19,4 +19,11 @@ export interface KanbanColumn {
   stories: UserStory[]
 }
 
-export type BoardState = KanbanColumn[]
+export interface KanbanBoardData {
+  id: string
+  title: string
+  columns: KanbanColumn[]
+  createdAt: string
+}
+
+export type AppState = KanbanBoardData[]
