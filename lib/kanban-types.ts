@@ -10,6 +10,7 @@ export interface UserStory {
   assignee: string
   points: number
   createdAt: string
+  images?: string[]
 }
 
 export interface KanbanColumn {

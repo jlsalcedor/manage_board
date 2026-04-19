@@ -21,6 +21,7 @@ import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { BoardHeader } from "./board-header"
 import { KanbanColumn as KanbanColumnComponent } from "./kanban-column"
 import { AddStoryDialog } from "./add-story-dialog"
+import { EditStoryDialog } from "./edit-story-dialog"
 import { AddColumnDialog } from "./add-column-dialog"
 import type { UserStory, KanbanBoardData, KanbanColumn } from "@/lib/kanban-types"
 
@@ -35,6 +36,7 @@ export function KanbanBoard({ board, updateColumns, onBack, onLogout }: KanbanBo
   const [activeStory, setActiveStory] = useState<UserStory | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [addStoryColumnId, setAddStoryColumnId] = useState<string | null>(null)
+  const [editingStory, setEditingStory] = useState<UserStory | null>(null)
   const [showAddColumn, setShowAddColumn] = useState(false)
 
   const sensors = useSensors(
@@ -216,6 +218,24 @@ export function KanbanBoard({ board, updateColumns, onBack, onLogout }: KanbanBo
     )
   }, [updateColumns])
 
+  const handleEditStory = useCallback(
+    (storyId: string, updatedData: Partial<UserStory>) => {
+      updateColumns((prev) =>
+        prev.map((col) => {
+          const storyIndex = col.stories.findIndex((s) => s.id === storyId)
+          if (storyIndex >= 0) {
+            const newStories = [...col.stories]
+            newStories[storyIndex] = { ...newStories[storyIndex], ...updatedData }
+            return { ...col, stories: newStories }
+          }
+          return col
+        })
+      )
+      setEditingStory(null)
+    },
+    [updateColumns]
+  )
+
   const handleAddColumn = useCallback((title: string, color: string) => {
     const newColumn: KanbanColumn = {
       id: `col-${Date.now()}`,
@@ -274,6 +294,7 @@ export function KanbanBoard({ board, updateColumns, onBack, onLogout }: KanbanBo
                 onDeleteStory={handleDeleteStory}
                 onDeleteColumn={handleDeleteColumn}
                 onRenameColumn={handleRenameColumn}
+                onEditStory={setEditingStory}
               />
             ))}
 
@@ -309,6 +330,15 @@ export function KanbanBoard({ board, updateColumns, onBack, onLogout }: KanbanBo
           if (!open) setAddStoryColumnId(null)
         }}
         onAdd={handleAddStory}
+      />
+
+      <EditStoryDialog
+        open={!!editingStory}
+        onOpenChange={(open) => {
+          if (!open) setEditingStory(null)
+        }}
+        story={editingStory}
+        onEdit={handleEditStory}
       />
 
       <AddColumnDialog

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
   Dialog,
   DialogContent,
@@ -24,10 +24,11 @@ import { X, Upload, Loader2, ZoomIn, ZoomOut, Maximize } from "lucide-react"
 import type { Priority, Tag, UserStory } from "@/lib/kanban-types"
 import Image from "next/image"
 
-interface AddStoryDialogProps {
+interface EditStoryDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onAdd: (story: Omit<UserStory, "id" | "createdAt">) => void
+  story: UserStory | null
+  onEdit: (storyId: string, updated: Partial<UserStory>) => void
 }
 
 const priorities: { value: Priority; label: string }[] = [
@@ -45,83 +46,95 @@ const tags: { value: Tag; label: string }[] = [
   { value: "feature", label: "Feature" },
 ]
 
-export function AddStoryDialog({
+export function EditStoryDialog({
   open,
   onOpenChange,
-  onAdd,
-}: AddStoryDialogProps) {
+  story,
+  onEdit,
+}: EditStoryDialogProps) {
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
   const [priority, setPriority] = useState<Priority>("medium")
   const [selectedTags, setSelectedTags] = useState<Tag[]>([])
   const [assignee, setAssignee] = useState("")
   const [points, setPoints] = useState("3")
-  const [images, setImages] = useState<File[]>([])
+  const [existingImages, setExistingImages] = useState<string[]>([])
+  const [newImages, setNewImages] = useState<File[]>([])
   const [isUploading, setIsUploading] = useState(false)
   const [previewImage, setPreviewImage] = useState<string | null>(null)
   const [zoom, setZoom] = useState(1)
 
+  useEffect(() => {
+    if (story) {
+      setTitle(story.title)
+      setDescription(story.description)
+      setPriority(story.priority)
+      setSelectedTags(story.tags)
+      setAssignee(story.assignee)
+      setPoints(story.points.toString())
+      setExistingImages(story.images || [])
+      setNewImages([])
+    }
+  }, [story])
+
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const filesArray = Array.from(e.target.files)
-      if (images.length + filesArray.length > 5) {
-        alert("Máximo 5 imágenes permitidas")
+      if (existingImages.length + newImages.length + filesArray.length > 5) {
+        alert("Máximo 5 imágenes permitidas en total.")
         return
       }
-      setImages((prev) => [...prev, ...filesArray].slice(0, 5))
+      setNewImages((prev) => [...prev, ...filesArray].slice(0, 5 - existingImages.length))
     }
   }
 
-  const removeImage = (index: number) => {
-    setImages((prev) => prev.filter((_, i) => i !== index))
+  const removeExistingImage = (index: number) => {
+    setExistingImages((prev) => prev.filter((_, i) => i !== index))
   }
 
-  const resetForm = () => {
-    setTitle("")
-    setDescription("")
-    setPriority("medium")
-    setSelectedTags([])
-    setAssignee("")
-    setPoints("3")
-    setImages([])
+  const removeNewImage = (index: number) => {
+    setNewImages((prev) => prev.filter((_, i) => i !== index))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!title.trim()) return
+    if (!title.trim() || !story) return
 
     setIsUploading(true)
 
     try {
-      let uploadedUrls: string[] = []
-      if (images.length > 0) {
+      let finalImages = [...existingImages]
+
+      // Upload new images
+      if (newImages.length > 0) {
         const formData = new FormData()
-        images.forEach((img) => formData.append("images", img))
+        newImages.forEach((img) => formData.append("images", img))
         const res = await fetch("/api/upload", {
           method: "POST",
           body: formData,
         })
         if (res.ok) {
           const data = await res.json()
-          uploadedUrls = data.urls || []
+          if (data.urls) {
+            finalImages = [...finalImages, ...data.urls]
+          }
         }
       }
 
-      onAdd({
+      onEdit(story.id, {
         title: title.trim(),
         description: description.trim(),
         priority,
         tags: selectedTags.length > 0 ? selectedTags : ["feature"],
         assignee: assignee.trim() || "Sin asignar",
         points: parseInt(points) || 3,
-        images: uploadedUrls,
+        images: finalImages,
       })
 
-      resetForm()
       onOpenChange(false)
     } catch (error) {
       console.error("Error al guardar historia:", error)
-      alert("Error al guardar la historia.")
+      alert("Error al actualizar la historia.")
     } finally {
       setIsUploading(false)
     }
@@ -133,23 +146,18 @@ export function AddStoryDialog({
     )
   }
 
+  if (!story) return null
+
   return (
     <>
-      <Dialog open={open} onOpenChange={(val) => {
-      if (!val && !isUploading) {
-        resetForm()
-        onOpenChange(false)
-      } else if (val) {
-        onOpenChange(true)
-      }
-    }}>
+      <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md bg-card border-border max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-foreground">
-            Nueva Historia de Usuario
+            Editar Historia de Usuario
           </DialogTitle>
           <DialogDescription>
-            Agrega los detalles de la nueva historia de usuario.
+            Modifica los detalles de la historia de usuario.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -163,7 +171,6 @@ export function AddStoryDialog({
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Ej: Implementar login con Google"
               className="bg-secondary border-border text-foreground"
-              autoFocus
             />
           </div>
 
@@ -182,26 +189,43 @@ export function AddStoryDialog({
 
           <div className="flex flex-col gap-2">
             <Label className="text-foreground">
-              Imágenes ({images.length}/5)
+              Imágenes ({existingImages.length + newImages.length}/5)
             </Label>
             <div className="flex flex-wrap gap-2">
-              {images.map((file, idx) => (
+              {existingImages.map((src, idx) => (
                 <div 
-                  key={idx} 
+                  key={`exist-${idx}`} 
                   className="relative size-16 group rounded-md overflow-hidden border border-border cursor-pointer"
-                  onClick={() => setPreviewImage(URL.createObjectURL(file))}
+                  onClick={() => setPreviewImage(src)}
                 >
-                  <Image src={URL.createObjectURL(file)} alt="Preview" fill className="object-cover" />
+                  <Image src={src} alt="Uploaded" fill className="object-cover" />
                   <button
                     type="button"
-                    onClick={(e) => { e.stopPropagation(); removeImage(idx); }}
+                    onClick={(e) => { e.stopPropagation(); removeExistingImage(idx); }}
                     className="absolute top-1 right-1 bg-black/50 rounded-full p-0.5 text-white opacity-0 group-hover:opacity-100 transition-opacity z-10"
                   >
                     <X className="size-3" />
                   </button>
                 </div>
               ))}
-              {images.length < 5 && (
+              {newImages.map((file, idx) => (
+                <div 
+                  key={`new-${idx}`} 
+                  className="relative size-16 group rounded-md overflow-hidden border border-border cursor-pointer"
+                  onClick={() => setPreviewImage(URL.createObjectURL(file))}
+                >
+                  {/* Utiliza un object url estático temporal para la previsualización */}
+                  <Image src={URL.createObjectURL(file)} alt="Preview" fill className="object-cover" />
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); removeNewImage(idx); }}
+                    className="absolute top-1 right-1 bg-black/50 rounded-full p-0.5 text-white opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                  >
+                    <X className="size-3" />
+                  </button>
+                </div>
+              ))}
+              {existingImages.length + newImages.length < 5 && (
                 <label className="flex size-16 cursor-pointer items-center justify-center rounded-md border border-dashed border-border bg-secondary hover:bg-secondary/80">
                   <Upload className="size-5 text-muted-foreground" />
                   <input
@@ -305,7 +329,7 @@ export function AddStoryDialog({
                   Guardando...
                 </>
               ) : (
-                "Agregar"
+                "Guardar"
               )}
             </Button>
           </DialogFooter>

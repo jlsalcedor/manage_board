@@ -26,6 +26,7 @@ interface KanbanColumnProps {
   onDeleteStory: (storyId: string) => void
   onDeleteColumn: (columnId: string) => void
   onRenameColumn: (columnId: string, newTitle: string) => void
+  onEditStory: (story: UserStory) => void
 }
 
 export function KanbanColumn({
@@ -34,6 +35,7 @@ export function KanbanColumn({
   onDeleteStory,
   onDeleteColumn,
   onRenameColumn,
+  onEditStory,
 }: KanbanColumnProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [editTitle, setEditTitle] = useState(column.title)
@@ -158,6 +160,7 @@ export function KanbanColumn({
                 key={story.id}
                 story={story}
                 onDelete={onDeleteStory}
+                onEdit={onEditStory}
               />
             ))}
           </SortableContext>

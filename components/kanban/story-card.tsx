@@ -2,10 +2,11 @@
 
 import { useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
-import { GripVertical, Trash2 } from "lucide-react"
+import { GripVertical, Trash2, Edit2, ImageIcon } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import type { UserStory, Priority, Tag } from "@/lib/kanban-types"
 import { cn } from "@/lib/utils"
+import Image from "next/image"
 
 const priorityConfig: Record<Priority, { label: string; className: string }> = {
   low: { label: "Baja", className: "bg-tag-green/20 text-tag-green border-tag-green/30" },
@@ -25,9 +26,10 @@ const tagConfig: Record<Tag, { label: string; className: string }> = {
 interface StoryCardProps {
   story: UserStory
   onDelete: (storyId: string) => void
+  onEdit: (story: UserStory) => void
 }
 
-export function StoryCard({ story, onDelete }: StoryCardProps) {
+export function StoryCard({ story, onDelete, onEdit }: StoryCardProps) {
   const {
     attributes,
     listeners,
@@ -73,14 +75,42 @@ export function StoryCard({ story, onDelete }: StoryCardProps) {
             <h4 className="text-sm font-medium text-kanban-card-foreground leading-snug">
               {story.title}
             </h4>
-            <button
-              onClick={() => onDelete(story.id)}
-              className="shrink-0 text-muted-foreground opacity-0 transition-opacity hover:text-destructive group-hover:opacity-100"
-              aria-label="Eliminar historia"
-            >
-              <Trash2 className="size-3.5" />
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => onEdit(story)}
+                className="shrink-0 text-muted-foreground opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100"
+                aria-label="Editar historia"
+              >
+                <Edit2 className="size-3.5" />
+              </button>
+              <button
+                onClick={() => onDelete(story.id)}
+                className="shrink-0 text-muted-foreground opacity-0 transition-opacity hover:text-destructive group-hover:opacity-100"
+                aria-label="Eliminar historia"
+              >
+                <Trash2 className="size-3.5" />
+              </button>
+            </div>
           </div>
+          
+          {/* Thumbnails if images exist */}
+          {story.images && story.images.length > 0 && (
+            <div className="relative w-full h-24 mb-3 rounded-md overflow-hidden bg-secondary border border-border group-hover:border-primary/20 transition-colors">
+              <Image 
+                src={story.images[0]} 
+                alt="Story thumbnail" 
+                fill 
+                className="object-cover"
+              />
+              {story.images.length > 1 && (
+                <div className="absolute bottom-1 right-1 bg-black/60 text-white text-[10px] font-medium px-1.5 py-0.5 rounded-sm flex items-center gap-1 backdrop-blur-sm">
+                  <ImageIcon className="size-3" />
+                  +{story.images.length - 1}
+                </div>
+              )}
+            </div>
+          )}
+
           <p className="text-xs text-muted-foreground line-clamp-2 mb-3">
             {story.description}
           </p>
