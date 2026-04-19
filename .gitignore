@@ -11,3 +11,6 @@ node_modules
 
 # Data
 data/bd_petmain.json
+
+# Uploads
+public/uploads/
