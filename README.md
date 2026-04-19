@@ -12,7 +12,10 @@ Una aplicación web de gestión de tareas estilo Kanban moderna y rápida, const
 - **Drag & Drop:** Sistema fluido de arrastrar y soltar soportado por `@dnd-kit` permitiendo mover tareas entre columnas fácilmente.
 - **Diseño Moderno y Accesible:** Componentes de interfaz de usuario de alta calidad gracias a **shadcn/ui** y **Radix UI**.
 - **Responsive:** Diseño adaptable que funciona tanto en escritorio como en dispositivos móviles, impulsado por **Tailwind CSS**.
-- **Almacenamiento Local (Sin DB):** Toda la persistencia de datos (incluyendo todos tus tableros, columnas y tareas) ocurre automáticamente en el archivo local `data/bd_petmain.json`.
+- **Edición de Historias de Usuario:** Modifica atributos y descripciones de las tareas creadas con un formulario enriquecido.
+- **Soporte de Imágenes Multicarga:** Adjunta hasta 5 imágenes por historia, almacenadas y servidas de manera local.
+- **Previsualización interactiva (Zoom):** Componente de _Lightbox_ nativo con controles de acercamiento, alejamiento y libre movimiento de las imágenes adjuntas.
+- **Almacenamiento Local (Sin DB):** Toda la persistencia de datos (incluyendo todos tus tableros, columnas, tareas y rutas de imágenes) ocurre automáticamente en el archivo local `data/bd_petmain.json`.
 
 ## 🛠️ Tecnologías Utilizadas
 
