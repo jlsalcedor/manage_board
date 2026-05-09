@@ -5,6 +5,7 @@ import { KanbanBoardData } from "@/lib/kanban-types"
 import { LayoutDashboard, LogOut, Plus, Trash2, Edit2, Calendar } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { AddBoardDialog } from "./add-board-dialog"
+import { EditBoardDialog } from "./edit-board-dialog"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
 
@@ -26,6 +27,7 @@ export function BoardsDashboard({
   onLogout,
 }: BoardsDashboardProps) {
   const [showAddDialog, setShowAddDialog] = useState(false)
+  const [editingBoard, setEditingBoard] = useState<{ id: string; title: string } | null>(null)
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -79,20 +81,33 @@ export function BoardsDashboard({
                   className="group relative flex flex-col rounded-xl border border-border bg-card p-5 cursor-pointer text-card-foreground shadow-sm transition-all hover:border-primary hover:shadow-md"
                 >
                   <div className="flex items-start justify-between mb-4">
-                    <h3 className="font-semibold text-lg line-clamp-1 pr-8">{board.title}</h3>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="absolute top-3 right-3 size-8 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        if (confirm(`¿Estás seguro de que deseas eliminar el tablero "${board.title}"?`)) {
-                          onDeleteBoard(board.id)
-                        }
-                      }}
-                    >
-                      <Trash2 className="size-4" />
-                    </Button>
+                    <h3 className="font-semibold text-lg line-clamp-1 pr-16">{board.title}</h3>
+                    <div className="absolute top-3 right-3 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-8 text-muted-foreground hover:text-foreground"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setEditingBoard({ id: board.id, title: board.title })
+                        }}
+                      >
+                        <Edit2 className="size-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-8 text-muted-foreground hover:text-destructive"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          if (confirm(`¿Estás seguro de que deseas eliminar el tablero "${board.title}"?`)) {
+                            onDeleteBoard(board.id)
+                          }
+                        }}
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
+                    </div>
                   </div>
                   
                   <div className="flex-1"></div>
@@ -133,6 +148,14 @@ export function BoardsDashboard({
         open={showAddDialog}
         onOpenChange={setShowAddDialog}
         onAdd={onAddBoard}
+      />
+
+      <EditBoardDialog
+        open={!!editingBoard}
+        onOpenChange={(open) => { if (!open) setEditingBoard(null) }}
+        boardId={editingBoard?.id ?? ""}
+        currentTitle={editingBoard?.title ?? ""}
+        onRename={onRenameBoard}
       />
     </div>
   )
