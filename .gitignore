@@ -10,7 +10,10 @@ node_modules
 .DS_Store
 
 # Data
-data/bd_petmain.json
+data/bd_board.json
 
 # Uploads
 public/uploads/
+
+# Config
+config/config.ts

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import fs from "fs/promises"
 import path from "path"
 
-const DB_PATH = path.join(process.cwd(), "data", "bd_petmain.json")
+const DB_PATH = path.join(process.cwd(), "data", "bd_board.json")
 
 async function ensureFile() {
   try {

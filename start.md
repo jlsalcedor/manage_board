@@ -47,7 +47,7 @@ El servidor debería iniciar por defecto en el puerto `3000`. Abre tu navegador 
 - **Estilos:** Tailwind CSS con variables globales en `app/globals.css`.
 - **Componentes:** shadcn/ui y Radix UI v1.0 (accesibles e independientes).
 - **Autenticación:** Cuenta con un sistema interno (simulado o ruteado vía `/api/auth`).
-- **Almacenamiento de Datos:** El proyecto parece utilizar el archivo `data/bd_petmain.json` para gestionar el estado/datos localmente.
+- **Almacenamiento de Datos:** El proyecto parece utilizar el archivo `data/bd_board.json` para gestionar el estado/datos localmente.
 
 ## 🛠 Otros Comandos Útiles
 

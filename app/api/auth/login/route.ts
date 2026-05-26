@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
+import { AUTH_CONFIG } from "@/config/config"
 
-const VALID_USER = "verPet"
-const VALID_PASSWORD = "%TPeGc%HO820gdo"
+const { VALID_USER, VALID_PASSWORD } = AUTH_CONFIG
 
 const SESSION_DURATION_MS = 12 * 60 * 60 * 1000 // 12 hours
 

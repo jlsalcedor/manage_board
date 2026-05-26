@@ -3,7 +3,7 @@
 Una aplicación web de gestión de tareas estilo Kanban moderna y rápida, construida con el ecosistema de **Next.js** y **React**.
 
 > **🛑 NO REQUIERE BASE DE DATOS:**
-> Este proyecto ha sido diseñado para ser **100% autónomo y fácil de ejecutar**. Toda la información y el almacenamiento de datos se manejan de manera local a través de un archivo JSON (`data/bd_petmain.json`). **No necesitas instalar, configurar, ni conectar ningún motor de base de datos** (como MySQL, PostgreSQL o MongoDB) para que la aplicación funcione en toda su capacidad.
+> Este proyecto ha sido diseñado para ser **100% autónomo y fácil de ejecutar**. Toda la información y el almacenamiento de datos se manejan de manera local a través de un archivo JSON (`data/bd_board.json`). **No necesitas instalar, configurar, ni conectar ningún motor de base de datos** (como MySQL, PostgreSQL o MongoDB) para que la aplicación funcione en toda su capacidad.
 
 ## 🚀 Características
 
@@ -15,7 +15,7 @@ Una aplicación web de gestión de tareas estilo Kanban moderna y rápida, const
 - **Edición de Historias de Usuario:** Modifica atributos y descripciones de las tareas creadas con un formulario enriquecido.
 - **Soporte de Imágenes Multicarga:** Adjunta hasta 5 imágenes por historia, almacenadas y servidas de manera local.
 - **Previsualización interactiva (Zoom):** Componente de _Lightbox_ nativo con controles de acercamiento, alejamiento y libre movimiento de las imágenes adjuntas.
-- **Almacenamiento Local (Sin DB):** Toda la persistencia de datos (incluyendo todos tus tableros, columnas, tareas y rutas de imágenes) ocurre automáticamente en el archivo local `data/bd_petmain.json`.
+- **Almacenamiento Local (Sin DB):** Toda la persistencia de datos (incluyendo todos tus tableros, columnas, tareas y rutas de imágenes) ocurre automáticamente en el archivo local `data/bd_board.json`.
 
 ## 🛠️ Tecnologías Utilizadas
 
@@ -63,18 +63,27 @@ Abre tu navegador y visita [http://localhost:3000](http://localhost:3000) para v
 
 Para ingresar a la aplicación en el formulario de Start, debes utilizar las siguientes credenciales únicas estáticas:
 
-- **Usuario:** `verPet`
-- **Contraseña:** `%TPeGc%HO820gdo`
+- **Usuario:** `userBoard`
+- **Contraseña:** `secureBoardPass2026`
 
+> **Nota de Configuración:** Por seguridad, las credenciales no están incluidas en el repositorio (`config/config.ts` está ignorado en Git).
+> Para que la aplicación funcione, **debes crear manualmente** el archivo `config/config.ts` (asegúrate de crear la carpeta `config` en la raíz si no existe) con el siguiente formato:
+> 
+> ```typescript
+> export const AUTH_CONFIG = {
+>   VALID_USER: "userBoard",
+>   VALID_PASSWORD: "secureBoardPass2026",
+> }
+> ```
+> 
 > **¿Necesitas cambiarlas?** 
-> Si deseas modificar estas credenciales, puedes hacerlo editando el archivo de la ruta de autenticación ubicado en: 
-> `app/api/auth/login/route.ts`
+> Si deseas modificar estas credenciales en el futuro, simplemente cambia los valores en el archivo `config/config.ts` que acabas de crear.
 
 ## 📁 Estructura del Proyecto
 
 - `/app`: Rutas principales de la aplicación usando el nuevo Next.js App Router.
 - `/components`: Componentes reutilizables de React (UI, modales, tarjetas, etc.).
-- `/data`: Archivos de almacenamiento local u orígenes de datos de prueba (`bd_petmain.json`).
+- `/data`: Archivos de almacenamiento local u orígenes de datos de prueba (`bd_board.json`).
 - `/hooks`: Custom hooks de React para lógica de negocio y estados.
 - `/lib`: Funciones de utilidad y configuración compartida.
 - `/public`: Archivos estáticos como imágenes y fuentes.
