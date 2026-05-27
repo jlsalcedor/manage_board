@@ -6,14 +6,14 @@ __v0_jsx-dev-runtime.ts
 # Common ignores
 node_modules
 .next/
-.env*.local
 .DS_Store
+
+# Environment variables
+.env
+.env*.local
 
 # Data
 data/bd_board.json
 
 # Uploads
 public/uploads/
-
-# Config
-config/config.ts

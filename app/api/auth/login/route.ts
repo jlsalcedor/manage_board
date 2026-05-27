@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
-import { AUTH_CONFIG } from "@/config/config"
 
-const { VALID_USER, VALID_PASSWORD } = AUTH_CONFIG
+const VALID_USER = process.env.ADMIN_USER
+const VALID_PASSWORD = process.env.ADMIN_PASSWORD
 
 const SESSION_DURATION_MS = 12 * 60 * 60 * 1000 // 12 hours
 

@@ -66,18 +66,16 @@ Para ingresar a la aplicación en el formulario de Start, debes utilizar las sig
 - **Usuario:** `userBoard`
 - **Contraseña:** `secureBoardPass2026`
 
-> **Nota de Configuración:** Por seguridad, las credenciales no están incluidas en el repositorio (`config/config.ts` está ignorado en Git).
-> Para que la aplicación funcione, **debes crear manualmente** el archivo `config/config.ts` (asegúrate de crear la carpeta `config` en la raíz si no existe) con el siguiente formato:
+> **Nota de Configuración:** Por seguridad, las credenciales no están incluidas en el repositorio. Para que la aplicación funcione en tu entorno local o en producción, **debes crear un archivo `.env`** en la raíz del proyecto basándote en el archivo de ejemplo proporcionado (`.env.example`).
 > 
-> ```typescript
-> export const AUTH_CONFIG = {
->   VALID_USER: "userBoard",
->   VALID_PASSWORD: "secureBoardPass2026",
-> }
+> Contenido del archivo `.env`:
+> ```env
+> ADMIN_USER="userBoard"
+> ADMIN_PASSWORD="secureBoardPass2026"
 > ```
 > 
 > **¿Necesitas cambiarlas?** 
-> Si deseas modificar estas credenciales en el futuro, simplemente cambia los valores en el archivo `config/config.ts` que acabas de crear.
+> Si deseas modificar estas credenciales en el futuro (especialmente para entornos productivos en Linux), simplemente cambia los valores directamente en tu archivo `.env`. No necesitas recompilar el proyecto, los cambios se aplican al reiniciar el servidor.
 
 ## 📁 Estructura del Proyecto
 
