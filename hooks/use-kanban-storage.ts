@@ -2,12 +2,13 @@
 
 import { useState, useEffect, useCallback, useRef } from "react"
 import type { AppState, KanbanBoardData, KanbanColumn } from "@/lib/kanban-types"
+import { API_URL } from "@/lib/utils"
 
 const EMPTY_APP_STATE: AppState = []
 
 async function fetchAppState(): Promise<AppState> {
   try {
-    const res = await fetch("/api/board")
+    const res = await fetch(`${API_URL}/api/board`)
     console.log("[v0] fetchAppState response status:", res.status)
     if (!res.ok) return EMPTY_APP_STATE
     const data = await res.json()
@@ -23,7 +24,7 @@ async function fetchAppState(): Promise<AppState> {
 
 async function persistAppState(appState: AppState) {
   try {
-    const res = await fetch("/api/board", {
+    const res = await fetch(`${API_URL}/api/board`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(appState),

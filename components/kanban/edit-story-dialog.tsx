@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/select"
 import { X, Upload, Loader2, ZoomIn, ZoomOut, Maximize } from "lucide-react"
 import type { Priority, Tag, UserStory } from "@/lib/kanban-types"
+import { API_URL } from "@/lib/utils"
 import Image from "next/image"
 
 interface EditStoryDialogProps {
@@ -109,7 +110,7 @@ export function EditStoryDialog({
       if (newImages.length > 0) {
         const formData = new FormData()
         newImages.forEach((img) => formData.append("images", img))
-        const res = await fetch("/api/upload", {
+        const res = await fetch(`${API_URL}/api/upload`, {
           method: "POST",
           body: formData,
         })

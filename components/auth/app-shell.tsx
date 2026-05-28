@@ -6,6 +6,7 @@ import { Loader2 } from "lucide-react"
 import { LoginForm } from "./login-form"
 import { useKanbanStorage } from "@/hooks/use-kanban-storage"
 import { BoardsDashboard } from "@/components/kanban/boards-dashboard"
+import { API_URL } from "@/lib/utils"
 
 const KanbanBoard = dynamic(
   () =>
@@ -97,7 +98,7 @@ export function AppShell() {
   const handleLogout = useCallback(() => {
     document.cookie =
       "session_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT"
-    fetch("/api/auth/logout", {
+    fetch(`${API_URL}/api/auth/logout`, {
       method: "POST",
       credentials: "include",
     }).catch(() => {})
