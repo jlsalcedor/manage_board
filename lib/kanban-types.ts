@@ -28,3 +28,6 @@ export interface KanbanBoardData {
 }
 
 export type AppState = KanbanBoardData[]
+
+export type BoardState = KanbanColumn[]
+
