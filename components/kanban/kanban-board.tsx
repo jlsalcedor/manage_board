@@ -5,6 +5,9 @@ import {
   DndContext,
   DragOverlay,
   closestCorners,
+  pointerWithin,
+  rectIntersection,
+  getFirstCollision,
   KeyboardSensor,
   PointerSensor,
   useSensor,
@@ -14,9 +17,12 @@ import {
   type DragOverEvent,
 } from "@dnd-kit/core"
 import {
+  SortableContext,
+  horizontalListSortingStrategy,
   sortableKeyboardCoordinates,
+  arrayMove,
 } from "@dnd-kit/sortable"
-import { Plus } from "lucide-react"
+import { Plus, GripHorizontal } from "lucide-react"
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { BoardHeader } from "./board-header"
 import { KanbanColumn as KanbanColumnComponent } from "./kanban-column"
@@ -34,6 +40,7 @@ interface KanbanBoardProps {
 
 export function KanbanBoard({ board, updateColumns, onBack, onLogout }: KanbanBoardProps) {
   const [activeStory, setActiveStory] = useState<UserStory | null>(null)
+  const [activeColumn, setActiveColumn] = useState<KanbanColumn | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [addStoryColumnId, setAddStoryColumnId] = useState<string | null>(null)
   const [editingStory, setEditingStory] = useState<UserStory | null>(null)
@@ -70,6 +77,8 @@ export function KanbanBoard({ board, updateColumns, onBack, onLogout }: KanbanBo
     }))
   }, [columns, searchQuery])
 
+  const columnIds = useMemo(() => filteredColumns.map((col) => col.id), [filteredColumns])
+
   const findColumnByStoryId = useCallback(
     (storyId: string) => {
       return columns.find((col) =>
@@ -82,6 +91,12 @@ export function KanbanBoard({ board, updateColumns, onBack, onLogout }: KanbanBo
   const handleDragStart = useCallback(
     (event: DragStartEvent) => {
       const { active } = event
+
+      if (active.data.current?.type === "column") {
+        setActiveColumn(active.data.current.column)
+        return
+      }
+
       const column = findColumnByStoryId(active.id as string)
       if (column) {
         const story = column.stories.find((s) => s.id === active.id)
@@ -95,6 +110,8 @@ export function KanbanBoard({ board, updateColumns, onBack, onLogout }: KanbanBo
     (event: DragOverEvent) => {
       const { active, over } = event
       if (!over) return
+
+      if (active.data.current?.type === "column") return
 
       const activeId = active.id as string
       const overId = over.id as string
@@ -151,6 +168,7 @@ export function KanbanBoard({ board, updateColumns, onBack, onLogout }: KanbanBo
     (event: DragEndEvent) => {
       const { active, over } = event
       setActiveStory(null)
+      setActiveColumn(null)
 
       if (!over) return
 
@@ -158,6 +176,15 @@ export function KanbanBoard({ board, updateColumns, onBack, onLogout }: KanbanBo
       const overId = over.id as string
 
       if (activeId === overId) return
+
+      if (active.data.current?.type === "column") {
+        updateColumns((prev) => {
+          const oldIndex = prev.findIndex((c) => c.id === activeId)
+          const newIndex = prev.findIndex((c) => c.id === overId)
+          return arrayMove(prev, oldIndex, newIndex)
+        })
+        return
+      }
 
       // Reorder within the same column
       const column = findColumnByStoryId(activeId)
@@ -279,24 +306,39 @@ export function KanbanBoard({ board, updateColumns, onBack, onLogout }: KanbanBo
 
       <DndContext
         sensors={sensors}
-        collisionDetection={closestCorners}
+        collisionDetection={(args) => {
+          // Primero intentamos ver dónde está el puntero
+          const pointerCollisions = pointerWithin(args)
+          
+          if (pointerCollisions.length > 0) {
+            return pointerCollisions
+          }
+          
+          // Si no, caemos en la intersección de rectángulos
+          return rectIntersection(args)
+        }}
         onDragStart={handleDragStart}
         onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
       >
         <ScrollArea className="flex-1">
           <div className="flex gap-4 p-6 h-[calc(100vh-73px)]">
-            {filteredColumns.map((column) => (
-              <KanbanColumnComponent
-                key={column.id}
-                column={column}
-                onAddStory={(colId) => setAddStoryColumnId(colId)}
-                onDeleteStory={handleDeleteStory}
-                onDeleteColumn={handleDeleteColumn}
-                onRenameColumn={handleRenameColumn}
-                onEditStory={setEditingStory}
-              />
-            ))}
+            <SortableContext
+              items={columnIds}
+              strategy={horizontalListSortingStrategy}
+            >
+              {filteredColumns.map((column) => (
+                <KanbanColumnComponent
+                  key={column.id}
+                  column={column}
+                  onAddStory={(colId) => setAddStoryColumnId(colId)}
+                  onDeleteStory={handleDeleteStory}
+                  onDeleteColumn={handleDeleteColumn}
+                  onRenameColumn={handleRenameColumn}
+                  onEditStory={setEditingStory}
+                />
+              ))}
+            </SortableContext>
 
             {/* Add Column Button */}
             <button
@@ -311,7 +353,17 @@ export function KanbanBoard({ board, updateColumns, onBack, onLogout }: KanbanBo
         </ScrollArea>
 
         <DragOverlay>
-          {activeStory ? (
+          {activeColumn ? (
+            <div className="flex h-min min-h-60 w-72 shrink-0 flex-col rounded-xl bg-kanban-column border-2 border-primary/50 opacity-80 shadow-2xl rotate-2">
+              <div className="flex items-center px-3 py-3 gap-2 border-b border-border/50">
+                <GripHorizontal className="size-4 text-muted-foreground" />
+                <div className={`size-2.5 rounded-full shrink-0 ${activeColumn.color}`} />
+                <span className="text-sm font-semibold text-kanban-column-foreground truncate">
+                  {activeColumn.title}
+                </span>
+              </div>
+            </div>
+          ) : activeStory ? (
             <div className="w-64 rounded-lg bg-kanban-card border border-primary/30 p-3 shadow-2xl rotate-3">
               <h4 className="text-sm font-medium text-kanban-card-foreground mb-1">
                 {activeStory.title}

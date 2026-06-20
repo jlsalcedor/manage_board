@@ -1,12 +1,13 @@
 "use client"
 
-import { useState } from "react"
-import { useDroppable } from "@dnd-kit/core"
+import { useState, useMemo } from "react"
+import { useSortable } from "@dnd-kit/sortable"
+import { CSS } from "@dnd-kit/utilities"
 import {
   SortableContext,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable"
-import { MoreHorizontal, Plus, Trash2, Edit2, Check, X } from "lucide-react"
+import { MoreHorizontal, Plus, Trash2, Edit2, Check, X, GripHorizontal } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -40,13 +41,28 @@ export function KanbanColumn({
   const [isEditing, setIsEditing] = useState(false)
   const [editTitle, setEditTitle] = useState(column.title)
 
-  const { setNodeRef, isOver } = useDroppable({
+  const itemIds = useMemo(() => column.stories.map((s) => s.id), [column.stories])
+
+  const {
+    setNodeRef,
+    attributes,
+    listeners,
+    transform,
+    transition,
+    isDragging,
+    isOver
+  } = useSortable({
     id: column.id,
     data: {
       type: "column",
       column,
     },
   })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  }
 
   const totalPoints = column.stories.reduce((sum, s) => sum + s.points, 0)
 
@@ -61,14 +77,25 @@ export function KanbanColumn({
 
   return (
     <div
+      ref={setNodeRef}
+      style={style}
       className={cn(
         "flex h-full w-72 shrink-0 flex-col rounded-xl bg-kanban-column border border-border transition-colors",
-        isOver && "border-primary/50 bg-kanban-column/80"
+        isDragging && "opacity-50 ring-2 ring-primary ring-offset-2",
+        isOver && !isDragging && "border-primary/50 bg-kanban-column/80"
       )}
     >
       {/* Column Header */}
-      <div className="flex items-center justify-between px-3 pt-3 pb-2">
+      <div className="flex items-center justify-between px-3 pt-3 pb-2 group/header">
         <div className="flex items-center gap-2 min-w-0 flex-1">
+          <button
+            {...attributes}
+            {...listeners}
+            className="cursor-grab text-muted-foreground opacity-50 transition-opacity hover:opacity-100 hover:text-foreground active:cursor-grabbing"
+            aria-label="Arrastrar columna"
+          >
+            <GripHorizontal className="size-4" />
+          </button>
           <div className={cn("size-2.5 rounded-full shrink-0", column.color)} />
           {isEditing ? (
             <div className="flex items-center gap-1 flex-1">
@@ -148,11 +175,10 @@ export function KanbanColumn({
       {/* Cards */}
       <ScrollArea className="flex-1 px-2 pb-2">
         <div
-          ref={setNodeRef}
           className="flex flex-col gap-2 p-1 min-h-[60px]"
         >
           <SortableContext
-            items={column.stories.map((s) => s.id)}
+            items={itemIds}
             strategy={verticalListSortingStrategy}
           >
             {column.stories.map((story) => (
