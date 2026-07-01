@@ -7,6 +7,7 @@ import { LoginForm } from "./login-form"
 import { useKanbanStorage } from "@/hooks/use-kanban-storage"
 import { BoardsDashboard } from "@/components/kanban/boards-dashboard"
 import { API_URL } from "@/lib/utils"
+import { AdminPanel } from "@/components/admin/admin-panel"
 
 const KanbanBoard = dynamic(
   () =>
@@ -14,7 +15,7 @@ const KanbanBoard = dynamic(
   { ssr: false }
 )
 
-function getSessionFromCookie(): boolean {
+function getSessionFromCookie(): { isValid: boolean; user?: string; role?: string; assignedBoardId?: string | null } {
   try {
     const cookies = document.cookie.split(";").reduce(
       (acc, cookie) => {
@@ -26,20 +27,26 @@ function getSessionFromCookie(): boolean {
     )
 
     const token = cookies["session_token"]
-    if (!token) return false
+    if (!token) return { isValid: false }
 
     const decoded = JSON.parse(atob(token))
-    if (!decoded.user || !decoded.expiresAt) return false
+    if (!decoded.user || !decoded.expiresAt) return { isValid: false }
 
-    return Date.now() < decoded.expiresAt
+    const isValid = Date.now() < decoded.expiresAt
+    return { isValid, user: decoded.user, role: decoded.role, assignedBoardId: decoded.assignedBoardId }
   } catch {
-    return false
+    return { isValid: false }
   }
 }
 
-function MainApp({ onLogout }: { onLogout: () => void }) {
+function MainApp({ onLogout, session }: { onLogout: () => void, session: any }) {
   const { boards, isLoading, addBoard, deleteBoard, renameBoard, updateBoardColumns } = useKanbanStorage()
-  const [selectedBoardId, setSelectedBoardId] = useState<string | null>(null)
+  // For admin panel
+  const [showAdminPanel, setShowAdminPanel] = useState(false)
+  // For users, force the assigned board
+  const [selectedBoardId, setSelectedBoardId] = useState<string | null>(
+    session.role === "user" ? session.assignedBoardId : null
+  )
 
   if (isLoading) {
     return (
@@ -52,9 +59,21 @@ function MainApp({ onLogout }: { onLogout: () => void }) {
     )
   }
 
+  if (showAdminPanel && session.role === "admin") {
+    return <AdminPanel onBack={() => setShowAdminPanel(false)} />
+  }
+
   if (selectedBoardId) {
     const selectedBoard = boards.find(b => b.id === selectedBoardId)
     if (!selectedBoard) {
+      if (session.role === "user") {
+        return (
+          <div className="flex flex-col h-screen items-center justify-center bg-background gap-4">
+            <p>El tablero asignado no fue encontrado.</p>
+            <button onClick={onLogout} className="text-primary hover:underline">Cerrar Sesión</button>
+          </div>
+        )
+      }
       setSelectedBoardId(null)
       return null
     }
@@ -63,21 +82,31 @@ function MainApp({ onLogout }: { onLogout: () => void }) {
       <KanbanBoard 
         board={selectedBoard} 
         updateColumns={(updater) => updateBoardColumns(selectedBoardId, updater)} 
-        onBack={() => setSelectedBoardId(null)}
+        onBack={session.role === "user" ? undefined : () => setSelectedBoardId(null)}
         onLogout={onLogout} 
+        session={session}
       />
     )
   }
 
   return (
-    <BoardsDashboard 
-      boards={boards} 
-      onSelectBoard={setSelectedBoardId} 
-      onAddBoard={addBoard} 
-      onDeleteBoard={deleteBoard} 
-      onRenameBoard={renameBoard} 
-      onLogout={onLogout} 
-    />
+    <div>
+      {session.role === "admin" && (
+        <div className="bg-muted p-2 flex justify-end px-8">
+          <button onClick={() => setShowAdminPanel(true)} className="text-sm font-medium hover:underline text-primary">
+            Ir al Panel de Administración
+          </button>
+        </div>
+      )}
+      <BoardsDashboard 
+        boards={boards} 
+        onSelectBoard={setSelectedBoardId} 
+        onAddBoard={addBoard} 
+        onDeleteBoard={deleteBoard} 
+        onRenameBoard={renameBoard} 
+        onLogout={onLogout} 
+      />
+    </div>
   )
 }
 
@@ -85,10 +114,17 @@ export function AppShell() {
   const [authState, setAuthState] = useState<
     "loading" | "login" | "authenticated"
   >("loading")
+  const [session, setSession] = useState<any>(null)
 
   const checkSession = useCallback(() => {
-    const isValid = getSessionFromCookie()
-    setAuthState(isValid ? "authenticated" : "login")
+    const sessionInfo = getSessionFromCookie()
+    if (sessionInfo.isValid) {
+      setSession(sessionInfo)
+      setAuthState("authenticated")
+    } else {
+      setSession(null)
+      setAuthState("login")
+    }
   }, [])
 
   useEffect(() => {
@@ -102,6 +138,7 @@ export function AppShell() {
       method: "POST",
       credentials: "include",
     }).catch(() => {})
+    setSession(null)
     setAuthState("login")
   }, [])
 
@@ -119,8 +156,10 @@ export function AppShell() {
   }
 
   if (authState === "login") {
-    return <LoginForm onLogin={() => setAuthState("authenticated")} />
+    return <LoginForm onLogin={() => {
+      checkSession()
+    }} />
   }
 
-  return <MainApp onLogout={handleLogout} />
+  return <MainApp onLogout={handleLogout} session={session} />
 }

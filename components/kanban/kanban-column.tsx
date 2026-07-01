@@ -28,6 +28,7 @@ interface KanbanColumnProps {
   onDeleteColumn: (columnId: string) => void
   onRenameColumn: (columnId: string, newTitle: string) => void
   onEditStory: (story: UserStory) => void
+  session: any
 }
 
 export function KanbanColumn({
@@ -37,6 +38,7 @@ export function KanbanColumn({
   onDeleteColumn,
   onRenameColumn,
   onEditStory,
+  session,
 }: KanbanColumnProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [editTitle, setEditTitle] = useState(column.title)
@@ -151,21 +153,25 @@ export function KanbanColumn({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-40">
-                <DropdownMenuItem onClick={() => setIsEditing(true)}>
-                  <Edit2 className="size-3.5" />
-                  Renombrar
-                </DropdownMenuItem>
+                {session.role !== "user" && (
+                  <DropdownMenuItem onClick={() => setIsEditing(true)}>
+                    <Edit2 className="size-3.5" />
+                    Renombrar
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem onClick={() => onAddStory(column.id)}>
                   <Plus className="size-3.5" />
                   Agregar historia
                 </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => onDeleteColumn(column.id)}
-                  className="text-destructive focus:text-destructive"
-                >
-                  <Trash2 className="size-3.5" />
-                  Eliminar columna
-                </DropdownMenuItem>
+                {session.role !== "user" && (
+                  <DropdownMenuItem
+                    onClick={() => onDeleteColumn(column.id)}
+                    className="text-destructive focus:text-destructive"
+                  >
+                    <Trash2 className="size-3.5" />
+                    Eliminar columna
+                  </DropdownMenuItem>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

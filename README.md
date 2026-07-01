@@ -9,13 +9,16 @@ Una aplicación web de gestión de tareas estilo Kanban moderna y rápida, const
 
 - **Gestión de Múltiples Tableros:** Crea, renombra, elimina y navega entre tableros independientes desde un Dashboard centralizado. Cada tablero aloja su propio progreso.
 - **Tableros Kanban Interactivos:** Organiza tus tareas en columnas personalizadas de forma visual e independiente para cada tablero.
+- **Panel de Administración:** Espacio exclusivo para el administrador maestro donde puede gestionar usuarios y revisar los registros del sistema.
+- **Roles y Permisos:** Sistema de roles (Admin / Usuario). Los usuarios estándar solo tienen acceso a interactuar con las tareas de su tablero asignado y no pueden crear ni editar estructuras de columnas.
+- **Bitácora de Auditoría:** Registro automático de las acciones realizadas por los usuarios (crear, editar, eliminar o mover historias) visible desde el panel de administración.
 - **Drag & Drop:** Sistema fluido de arrastrar y soltar soportado por `@dnd-kit` permitiendo mover tareas entre columnas fácilmente.
 - **Diseño Moderno y Accesible:** Componentes de interfaz de usuario de alta calidad gracias a **shadcn/ui** y **Radix UI**.
 - **Responsive:** Diseño adaptable que funciona tanto en escritorio como en dispositivos móviles, impulsado por **Tailwind CSS**.
 - **Edición de Historias de Usuario:** Modifica atributos y descripciones de las tareas creadas con un formulario enriquecido.
 - **Soporte de Imágenes Multicarga:** Adjunta hasta 5 imágenes por historia, almacenadas y servidas de manera local.
 - **Previsualización interactiva (Zoom):** Componente de _Lightbox_ nativo con controles de acercamiento, alejamiento y libre movimiento de las imágenes adjuntas.
-- **Almacenamiento Local (Sin DB):** Toda la persistencia de datos (incluyendo todos tus tableros, columnas, tareas y rutas de imágenes) ocurre automáticamente en el archivo local `data/bd_board.json`.
+- **Almacenamiento Local (Sin DB):** Toda la persistencia de datos (tableros, usuarios y logs) ocurre automáticamente en archivos locales dentro de la carpeta `data/` (`bd_board.json`, `bd_users.json`, `bd_logs.json`).
 
 ## 🛠️ Tecnologías Utilizadas
 
@@ -61,10 +64,14 @@ Abre tu navegador y visita [http://localhost:3000](http://localhost:3000) para v
 
 ### 🔐 Autenticación (Credenciales de Acceso)
 
-Para ingresar a la aplicación en el formulario de Start, debes utilizar las siguientes credenciales únicas estáticas:
+La aplicación maneja dos tipos de inicio de sesión: **Administrador Maestro** y **Usuarios Estándar**.
 
-- **Usuario:** `userBoard`
-- **Contraseña:** `secureBoardPass2026`
+### Administrador Maestro
+
+Para ingresar a la aplicación como administrador (quien puede crear más tableros y usuarios), debes utilizar las siguientes credenciales configuradas mediante variables de entorno:
+
+- **Usuario:** `userBoard` (por defecto en el `.env.example`)
+- **Contraseña:** `secureBoardPass2026` (por defecto en el `.env.example`)
 
 > **Nota de Configuración:** Por seguridad, las credenciales no están incluidas en el repositorio. Para que la aplicación funcione en tu entorno local o en producción, **debes crear un archivo `.env`** en la raíz del proyecto basándote en el archivo de ejemplo proporcionado (`.env.example`).
 > 
@@ -76,6 +83,13 @@ Para ingresar a la aplicación en el formulario de Start, debes utilizar las sig
 > 
 > **¿Necesitas cambiarlas?** 
 > Si deseas modificar estas credenciales en el futuro (especialmente para entornos productivos en Linux), simplemente cambia los valores directamente en tu archivo `.env`. No necesitas recompilar el proyecto, los cambios se aplican al reiniciar el servidor.
+
+### Usuarios Estándar
+
+Una vez dentro como administrador, puedes acceder al **Panel de Administración** para crear usuarios adicionales. Estos usuarios:
+- Reciben acceso exclusivamente a un tablero previamente configurado.
+- Se autentican usando las credenciales que el administrador les asigne.
+- Sus datos de acceso se almacenan localmente en el archivo `data/bd_users.json`.
 
 ## 📁 Estructura del Proyecto
 

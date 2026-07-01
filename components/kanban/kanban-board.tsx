@@ -30,21 +30,25 @@ import { AddStoryDialog } from "./add-story-dialog"
 import { EditStoryDialog } from "./edit-story-dialog"
 import { AddColumnDialog } from "./add-column-dialog"
 import type { UserStory, KanbanBoardData, KanbanColumn } from "@/lib/kanban-types"
+import { useLogs } from "@/hooks/use-logs"
 
 interface KanbanBoardProps {
   board: KanbanBoardData
   updateColumns: (updater: KanbanColumn[] | ((prev: KanbanColumn[]) => KanbanColumn[])) => void
-  onBack: () => void
+  onBack?: () => void
   onLogout?: () => void
+  session: any
 }
 
-export function KanbanBoard({ board, updateColumns, onBack, onLogout }: KanbanBoardProps) {
+export function KanbanBoard({ board, updateColumns, onBack, onLogout, session }: KanbanBoardProps) {
   const [activeStory, setActiveStory] = useState<UserStory | null>(null)
   const [activeColumn, setActiveColumn] = useState<KanbanColumn | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [addStoryColumnId, setAddStoryColumnId] = useState<string | null>(null)
   const [editingStory, setEditingStory] = useState<UserStory | null>(null)
   const [showAddColumn, setShowAddColumn] = useState(false)
+  
+  const { createLog } = useLogs()
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -158,6 +162,13 @@ export function KanbanBoard({ board, updateColumns, onBack, onLogout }: KanbanBo
           stories: newStories,
         }
 
+        // Log the action (without waiting)
+        createLog({
+          userId: session.user,
+          action: "Movimiento de historia",
+          details: `Historia "${story.title}" movida de "${newBoard[activeColIndex].title}" a "${newBoard[targetColIndex].title}"`
+        })
+
         return newBoard
       })
     },
@@ -231,19 +242,38 @@ export function KanbanBoard({ board, updateColumns, onBack, onLogout }: KanbanBo
             : col
         )
       )
+      
+      createLog({
+        userId: session.user,
+        action: "Creación de historia",
+        details: `Nueva historia "${newStory.title}"`
+      })
+
       setAddStoryColumnId(null)
     },
-    [addStoryColumnId, updateColumns]
+    [addStoryColumnId, updateColumns, createLog, session]
   )
 
   const handleDeleteStory = useCallback((storyId: string) => {
+    let deletedTitle = ""
     updateColumns((prev) =>
-      prev.map((col) => ({
-        ...col,
-        stories: col.stories.filter((s) => s.id !== storyId),
-      }))
+      prev.map((col) => {
+        const story = col.stories.find(s => s.id === storyId)
+        if (story) deletedTitle = story.title
+        return {
+          ...col,
+          stories: col.stories.filter((s) => s.id !== storyId),
+        }
+      })
     )
-  }, [updateColumns])
+    if (deletedTitle) {
+      createLog({
+        userId: session.user,
+        action: "Eliminación de historia",
+        details: `Historia eliminada: "${deletedTitle}"`
+      })
+    }
+  }, [updateColumns, createLog, session])
 
   const handleEditStory = useCallback(
     (storyId: string, updatedData: Partial<UserStory>) => {
@@ -258,9 +288,16 @@ export function KanbanBoard({ board, updateColumns, onBack, onLogout }: KanbanBo
           return col
         })
       )
+      
+      createLog({
+        userId: session.user,
+        action: "Edición de historia",
+        details: `Historia editada (ID: ${storyId})`
+      })
+
       setEditingStory(null)
     },
-    [updateColumns]
+    [updateColumns, createLog, session]
   )
 
   const handleAddColumn = useCallback((title: string, color: string) => {
@@ -336,18 +373,21 @@ export function KanbanBoard({ board, updateColumns, onBack, onLogout }: KanbanBo
                   onDeleteColumn={handleDeleteColumn}
                   onRenameColumn={handleRenameColumn}
                   onEditStory={setEditingStory}
+                  session={session}
                 />
               ))}
             </SortableContext>
 
             {/* Add Column Button */}
-            <button
-              onClick={() => setShowAddColumn(true)}
-              className="flex h-fit w-72 shrink-0 items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border bg-kanban-column/50 px-4 py-8 text-sm font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:bg-kanban-column hover:text-foreground"
-            >
-              <Plus className="size-4" />
-              Agregar columna
-            </button>
+            {session.role !== "user" && (
+              <button
+                onClick={() => setShowAddColumn(true)}
+                className="flex h-fit w-72 shrink-0 items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border bg-kanban-column/50 px-4 py-8 text-sm font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:bg-kanban-column hover:text-foreground"
+              >
+                <Plus className="size-4" />
+                Agregar columna
+              </button>
+            )}
           </div>
           <ScrollBar orientation="horizontal" />
         </ScrollArea>
