@@ -13,7 +13,6 @@ node_modules
 .env*.local
 
 # Data
-data/bd_board.json
-
+data/*.json
 # Uploads
 public/uploads/
