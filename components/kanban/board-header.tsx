@@ -12,6 +12,7 @@ interface BoardHeaderProps {
   onReset: () => void
   onBack: () => void
   onLogout?: () => void
+  isAdmin?: boolean
 }
 
 export function BoardHeader({
@@ -22,6 +23,7 @@ export function BoardHeader({
   onReset,
   onBack,
   onLogout,
+  isAdmin,
 }: BoardHeaderProps) {
   return (
     <header className="flex items-center justify-between border-b border-border px-6 py-4">
@@ -42,15 +44,17 @@ export function BoardHeader({
         </div>
       </div>
       <div className="flex items-center gap-3">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={onReset}
-          className="gap-1.5 text-muted-foreground hover:text-foreground"
-        >
-          <Trash2 className="size-3.5" />
-          Vaciar columnas
-        </Button>
+        {isAdmin && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onReset}
+            className="gap-1.5 text-muted-foreground hover:text-foreground"
+          >
+            <Trash2 className="size-3.5" />
+            Vaciar columnas
+          </Button>
+        )}
         <div className="relative w-64">
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input

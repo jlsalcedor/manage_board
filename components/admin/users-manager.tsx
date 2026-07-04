@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { Trash2, Edit } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
@@ -23,11 +23,11 @@ export function UsersManager() {
   const [formData, setFormData] = useState({
     username: "",
     password: "",
-    assignedBoardId: ""
+    assignedBoardIds: [] as string[]
   })
 
   const resetForm = () => {
-    setFormData({ username: "", password: "", assignedBoardId: "" })
+    setFormData({ username: "", password: "", assignedBoardIds: [] })
     setEditingId(null)
   }
 
@@ -36,7 +36,7 @@ export function UsersManager() {
       setFormData({
         username: user.username,
         password: user.password || "",
-        assignedBoardId: user.assignedBoardId || ""
+        assignedBoardIds: user.assignedBoardIds || []
       })
       setEditingId(user.id)
     } else {
@@ -45,10 +45,19 @@ export function UsersManager() {
     setIsOpen(true)
   }
 
+  const toggleBoard = (boardId: string, checked: boolean) => {
+    setFormData((prev) => ({
+      ...prev,
+      assignedBoardIds: checked
+        ? [...prev.assignedBoardIds, boardId]
+        : prev.assignedBoardIds.filter((id) => id !== boardId)
+    }))
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!formData.username || !formData.password || !formData.assignedBoardId) {
-      toast({ title: "Error", description: "Todos los campos son obligatorios", variant: "destructive" })
+    if (!formData.username || !formData.password) {
+      toast({ title: "Error", description: "Usuario y contraseña son obligatorios", variant: "destructive" })
       return
     }
 
@@ -106,20 +115,24 @@ export function UsersManager() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>Tablero Asignado</Label>
-                <Select 
-                  value={formData.assignedBoardId} 
-                  onValueChange={val => setFormData({...formData, assignedBoardId: val})}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecciona un tablero" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {boards.map(board => (
-                      <SelectItem key={board.id} value={board.id}>{board.title}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label>Tableros Asignados</Label>
+                <div className="space-y-2 max-h-48 overflow-y-auto border rounded-md p-3">
+                  {boards.length === 0 && (
+                    <p className="text-sm text-muted-foreground">No hay tableros creados</p>
+                  )}
+                  {boards.map(board => (
+                    <div key={board.id} className="flex items-center gap-2">
+                      <Checkbox
+                        id={`board-${board.id}`}
+                        checked={formData.assignedBoardIds.includes(board.id)}
+                        onCheckedChange={(checked) => toggleBoard(board.id, checked === true)}
+                      />
+                      <Label htmlFor={`board-${board.id}`} className="font-normal cursor-pointer">
+                        {board.title}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
               </div>
               <Button type="submit" className="w-full">Guardar</Button>
             </form>
@@ -136,19 +149,21 @@ export function UsersManager() {
               <TableRow>
                 <TableHead>Usuario</TableHead>
                 <TableHead>Contraseña</TableHead>
-                <TableHead>Tablero</TableHead>
+                <TableHead>Tableros</TableHead>
                 <TableHead>Fecha Creación</TableHead>
                 <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {users.map((user) => {
-                const assignedBoard = boards.find(b => b.id === user.assignedBoardId)
+                const assignedTitles = (user.assignedBoardIds || [])
+                  .map(id => boards.find(b => b.id === id)?.title)
+                  .filter(Boolean)
                 return (
                   <TableRow key={user.id}>
                     <TableCell className="font-medium">{user.username}</TableCell>
                     <TableCell>{user.password}</TableCell>
-                    <TableCell>{assignedBoard?.title || "Desconocido"}</TableCell>
+                    <TableCell>{assignedTitles.length > 0 ? assignedTitles.join(", ") : "Ninguno"}</TableCell>
                     <TableCell>{new Date(user.createdAt).toLocaleDateString()}</TableCell>
                     <TableCell className="text-right">
                       <Button variant="ghost" size="icon" onClick={() => handleOpen(user)}>

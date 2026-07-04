@@ -8,7 +8,7 @@ export interface User {
   username: string
   password?: string // only for admin UI
   role: string
-  assignedBoardId: string | null
+  assignedBoardIds: string[]
   createdAt: string
 }
 

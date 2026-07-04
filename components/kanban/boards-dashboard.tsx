@@ -16,6 +16,7 @@ interface BoardsDashboardProps {
   onDeleteBoard: (boardId: string) => void
   onRenameBoard: (boardId: string, title: string) => void
   onLogout?: () => void
+  canManage?: boolean
 }
 
 export function BoardsDashboard({
@@ -25,6 +26,7 @@ export function BoardsDashboard({
   onDeleteBoard,
   onRenameBoard,
   onLogout,
+  canManage = true,
 }: BoardsDashboardProps) {
   const [showAddDialog, setShowAddDialog] = useState(false)
   const [editingBoard, setEditingBoard] = useState<{ id: string; title: string } | null>(null)
@@ -62,10 +64,12 @@ export function BoardsDashboard({
         <div className="max-w-6xl mx-auto">
           <div className="mb-6 flex items-center justify-between">
             <h2 className="text-2xl font-bold text-foreground">Tableros de Proyecto</h2>
-            <Button onClick={() => setShowAddDialog(true)} className="gap-2">
-              <Plus className="size-4" />
-              Nuevo Tablero
-            </Button>
+            {canManage && (
+              <Button onClick={() => setShowAddDialog(true)} className="gap-2">
+                <Plus className="size-4" />
+                Nuevo Tablero
+              </Button>
+            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -82,32 +86,34 @@ export function BoardsDashboard({
                 >
                   <div className="flex items-start justify-between mb-4">
                     <h3 className="font-semibold text-lg line-clamp-1 pr-16">{board.title}</h3>
-                    <div className="absolute top-3 right-3 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="size-8 text-muted-foreground hover:text-foreground"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          setEditingBoard({ id: board.id, title: board.title })
-                        }}
-                      >
-                        <Edit2 className="size-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="size-8 text-muted-foreground hover:text-destructive"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          if (confirm(`¿Estás seguro de que deseas eliminar el tablero "${board.title}"?`)) {
-                            onDeleteBoard(board.id)
-                          }
-                        }}
-                      >
-                        <Trash2 className="size-4" />
-                      </Button>
-                    </div>
+                    {canManage && (
+                      <div className="absolute top-3 right-3 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="size-8 text-muted-foreground hover:text-foreground"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setEditingBoard({ id: board.id, title: board.title })
+                          }}
+                        >
+                          <Edit2 className="size-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="size-8 text-muted-foreground hover:text-destructive"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            if (confirm(`¿Estás seguro de que deseas eliminar el tablero "${board.title}"?`)) {
+                              onDeleteBoard(board.id)
+                            }
+                          }}
+                        >
+                          <Trash2 className="size-4" />
+                        </Button>
+                      </div>
+                    )}
                   </div>
                   
                   <div className="flex-1"></div>
@@ -131,15 +137,24 @@ export function BoardsDashboard({
               )
             })}
 
-            <button
-              onClick={() => setShowAddDialog(true)}
-              className="flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-border bg-kanban-column/50 min-h-[200px] text-muted-foreground transition-colors hover:border-primary/40 hover:bg-kanban-column hover:text-foreground"
-            >
-              <div className="flex size-10 items-center justify-center rounded-full bg-secondary">
-                <Plus className="size-5" />
+            {canManage && (
+              <button
+                onClick={() => setShowAddDialog(true)}
+                className="flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-border bg-kanban-column/50 min-h-[200px] text-muted-foreground transition-colors hover:border-primary/40 hover:bg-kanban-column hover:text-foreground"
+              >
+                <div className="flex size-10 items-center justify-center rounded-full bg-secondary">
+                  <Plus className="size-5" />
+                </div>
+                <span className="font-medium">Crear nuevo tablero</span>
+              </button>
+            )}
+
+            {boards.length === 0 && !canManage && (
+              <div className="col-span-full flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border bg-kanban-column/50 min-h-[200px] text-muted-foreground">
+                <span className="font-medium">No tienes tableros asignados todavía</span>
+                <span className="text-xs">Contacta al administrador para que te asigne uno</span>
               </div>
-              <span className="font-medium">Crear nuevo tablero</span>
-            </button>
+            )}
           </div>
         </div>
       </main>

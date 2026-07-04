@@ -15,7 +15,7 @@ const KanbanBoard = dynamic(
   { ssr: false }
 )
 
-function getSessionFromCookie(): { isValid: boolean; user?: string; role?: string; assignedBoardId?: string | null } {
+function getSessionFromCookie(): { isValid: boolean; user?: string; role?: string; assignedBoardIds?: string[] } {
   try {
     const cookies = document.cookie.split(";").reduce(
       (acc, cookie) => {
@@ -33,20 +33,23 @@ function getSessionFromCookie(): { isValid: boolean; user?: string; role?: strin
     if (!decoded.user || !decoded.expiresAt) return { isValid: false }
 
     const isValid = Date.now() < decoded.expiresAt
-    return { isValid, user: decoded.user, role: decoded.role, assignedBoardId: decoded.assignedBoardId }
+    return { isValid, user: decoded.user, role: decoded.role, assignedBoardIds: decoded.assignedBoardIds || [] }
   } catch {
     return { isValid: false }
   }
 }
 
 function MainApp({ onLogout, session }: { onLogout: () => void, session: any }) {
-  const { boards, isLoading, addBoard, deleteBoard, renameBoard, updateBoardColumns } = useKanbanStorage()
+  const { boards: allBoards, isLoading, addBoard, deleteBoard, renameBoard, updateBoardColumns } = useKanbanStorage()
   // For admin panel
   const [showAdminPanel, setShowAdminPanel] = useState(false)
-  // For users, force the assigned board
-  const [selectedBoardId, setSelectedBoardId] = useState<string | null>(
-    session.role === "user" ? session.assignedBoardId : null
-  )
+  const [selectedBoardId, setSelectedBoardId] = useState<string | null>(null)
+
+  // Standard users only ever see the boards assigned to them
+  const boards =
+    session.role === "user"
+      ? allBoards.filter((b) => (session.assignedBoardIds || []).includes(b.id))
+      : allBoards
 
   if (isLoading) {
     return (
@@ -66,24 +69,16 @@ function MainApp({ onLogout, session }: { onLogout: () => void, session: any }) 
   if (selectedBoardId) {
     const selectedBoard = boards.find(b => b.id === selectedBoardId)
     if (!selectedBoard) {
-      if (session.role === "user") {
-        return (
-          <div className="flex flex-col h-screen items-center justify-center bg-background gap-4">
-            <p>El tablero asignado no fue encontrado.</p>
-            <button onClick={onLogout} className="text-primary hover:underline">Cerrar Sesión</button>
-          </div>
-        )
-      }
       setSelectedBoardId(null)
       return null
     }
 
     return (
-      <KanbanBoard 
-        board={selectedBoard} 
-        updateColumns={(updater) => updateBoardColumns(selectedBoardId, updater)} 
-        onBack={session.role === "user" ? undefined : () => setSelectedBoardId(null)}
-        onLogout={onLogout} 
+      <KanbanBoard
+        board={selectedBoard}
+        updateColumns={(updater) => updateBoardColumns(selectedBoardId, updater)}
+        onBack={() => setSelectedBoardId(null)}
+        onLogout={onLogout}
         session={session}
       />
     )
@@ -98,13 +93,14 @@ function MainApp({ onLogout, session }: { onLogout: () => void, session: any }) 
           </button>
         </div>
       )}
-      <BoardsDashboard 
-        boards={boards} 
-        onSelectBoard={setSelectedBoardId} 
-        onAddBoard={addBoard} 
-        onDeleteBoard={deleteBoard} 
-        onRenameBoard={renameBoard} 
-        onLogout={onLogout} 
+      <BoardsDashboard
+        boards={boards}
+        onSelectBoard={setSelectedBoardId}
+        onAddBoard={addBoard}
+        onDeleteBoard={deleteBoard}
+        onRenameBoard={renameBoard}
+        onLogout={onLogout}
+        canManage={session.role === "admin"}
       />
     </div>
   )

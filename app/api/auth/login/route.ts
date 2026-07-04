@@ -22,7 +22,7 @@ export async function POST(request: Request) {
     const { username, password } = await request.json()
 
     let role = ""
-    let assignedBoardId = null
+    let assignedBoardIds: string[] = []
 
     if (username === VALID_USER && password === VALID_PASSWORD) {
       role = "admin"
@@ -32,10 +32,10 @@ export async function POST(request: Request) {
       const raw = await fs.readFile(DB_PATH, "utf-8")
       const users = JSON.parse(raw)
       const user = users.find((u: any) => u.username === username && u.password === password)
-      
+
       if (user) {
         role = "user"
-        assignedBoardId = user.assignedBoardId
+        assignedBoardIds = user.assignedBoardIds || []
       } else {
         return NextResponse.json(
           { error: "Usuario o contrasena invalidos" },
@@ -46,10 +46,10 @@ export async function POST(request: Request) {
 
     const expiresAt = Date.now() + SESSION_DURATION_MS
     const token = Buffer.from(
-      JSON.stringify({ user: username, role, assignedBoardId, expiresAt })
+      JSON.stringify({ user: username, role, assignedBoardIds, expiresAt })
     ).toString("base64")
 
-    const response = NextResponse.json({ success: true, user: username, role, assignedBoardId })
+    const response = NextResponse.json({ success: true, user: username, role, assignedBoardIds })
 
     response.cookies.set("session_token", token, {
       httpOnly: false,

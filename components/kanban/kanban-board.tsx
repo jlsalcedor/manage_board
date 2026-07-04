@@ -35,7 +35,7 @@ import { useLogs } from "@/hooks/use-logs"
 interface KanbanBoardProps {
   board: KanbanBoardData
   updateColumns: (updater: KanbanColumn[] | ((prev: KanbanColumn[]) => KanbanColumn[])) => void
-  onBack?: () => void
+  onBack: () => void
   onLogout?: () => void
   session: any
 }
@@ -339,6 +339,7 @@ export function KanbanBoard({ board, updateColumns, onBack, onLogout, session }:
         onReset={handleResetBoard}
         onBack={onBack}
         onLogout={onLogout}
+        isAdmin={session.role === "admin"}
       />
 
       <DndContext
