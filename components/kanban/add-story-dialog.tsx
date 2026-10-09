@@ -192,7 +192,7 @@ export function AddStoryDialog({
                   className="relative size-16 group rounded-md overflow-hidden border border-border cursor-pointer"
                   onClick={() => setPreviewImage(URL.createObjectURL(file))}
                 >
-                  <Image src={URL.createObjectURL(file)} alt="Preview" fill className="object-cover" />
+                  <Image src={URL.createObjectURL(file)} alt="Preview" fill unoptimized className="object-cover" />
                   <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); removeImage(idx); }}

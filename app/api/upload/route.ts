@@ -15,7 +15,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Maximum 5 files allowed" }, { status: 400 })
     }
 
-    const uploadDir = path.join(process.cwd(), "public", "uploads")
+    const uploadDir = path.join(process.cwd(), "data", "uploads")
     
     // Ensure upload directory exists
     try {

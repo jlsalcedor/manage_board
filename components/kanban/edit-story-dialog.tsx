@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/select"
 import { X, Upload, Loader2, ZoomIn, ZoomOut, Maximize } from "lucide-react"
 import type { Priority, Tag, UserStory } from "@/lib/kanban-types"
-import { API_URL } from "@/lib/utils"
+import { API_URL, resolveImageUrl } from "@/lib/utils"
 import Image from "next/image"
 
 interface EditStoryDialogProps {
@@ -197,9 +197,9 @@ export function EditStoryDialog({
                 <div 
                   key={`exist-${idx}`} 
                   className="relative size-16 group rounded-md overflow-hidden border border-border cursor-pointer"
-                  onClick={() => setPreviewImage(src)}
+                  onClick={() => setPreviewImage(resolveImageUrl(src))}
                 >
-                  <Image src={src} alt="Uploaded" fill className="object-cover" />
+                  <Image src={resolveImageUrl(src)} alt="Uploaded" fill unoptimized className="object-cover" />
                   <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); removeExistingImage(idx); }}
@@ -216,7 +216,7 @@ export function EditStoryDialog({
                   onClick={() => setPreviewImage(URL.createObjectURL(file))}
                 >
                   {/* Utiliza un object url estático temporal para la previsualización */}
-                  <Image src={URL.createObjectURL(file)} alt="Preview" fill className="object-cover" />
+                  <Image src={URL.createObjectURL(file)} alt="Preview" fill unoptimized className="object-cover" />
                   <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); removeNewImage(idx); }}

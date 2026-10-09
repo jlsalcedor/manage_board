@@ -16,3 +16,4 @@ node_modules
 data/*.json
 # Uploads
 public/uploads/
+data/uploads/

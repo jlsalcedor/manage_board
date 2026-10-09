@@ -5,7 +5,7 @@ import { CSS } from "@dnd-kit/utilities"
 import { GripVertical, Trash2, Edit2, ImageIcon } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import type { UserStory, Priority, Tag } from "@/lib/kanban-types"
-import { cn } from "@/lib/utils"
+import { cn, resolveImageUrl } from "@/lib/utils"
 import Image from "next/image"
 
 const priorityConfig: Record<Priority, { label: string; className: string }> = {
@@ -97,7 +97,8 @@ export function StoryCard({ story, onDelete, onEdit }: StoryCardProps) {
           {story.images && story.images.length > 0 && (
             <div className="relative w-full h-24 mb-3 rounded-md overflow-hidden bg-secondary border border-border group-hover:border-primary/20 transition-colors">
               <Image 
-                src={story.images[0]} 
+                src={resolveImageUrl(story.images[0])}
+                unoptimized
                 alt="Story thumbnail" 
                 fill 
                 className="object-cover"
