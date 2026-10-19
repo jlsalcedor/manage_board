@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server"
 import fs from "fs/promises"
 import path from "path"
+import { requireSession } from "@/lib/session"
 
 export async function POST(request: Request) {
+  const auth = await requireSession()
+  if (!auth.ok) return auth.response
+
   try {
     const formData = await request.formData()
     const files = formData.getAll("images") as File[]

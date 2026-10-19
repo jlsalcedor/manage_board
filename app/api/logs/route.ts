@@ -1,22 +1,17 @@
 import { NextResponse } from "next/server"
 import fs from "fs/promises"
 import path from "path"
+import { appendLog } from "@/lib/audit-log"
+import { requireSession } from "@/lib/session"
 
 const DB_PATH = path.join(process.cwd(), "data", "bd_logs.json")
 
-async function ensureFile() {
-  try {
-    await fs.access(DB_PATH)
-  } catch {
-    await fs.mkdir(path.dirname(DB_PATH), { recursive: true })
-    await fs.writeFile(DB_PATH, "[]", "utf-8")
-  }
-}
-
 export async function GET() {
+  const auth = await requireSession({ role: "admin" })
+  if (!auth.ok) return auth.response
+
   try {
-    await ensureFile()
-    const raw = await fs.readFile(DB_PATH, "utf-8")
+    const raw = await fs.readFile(DB_PATH, "utf-8").catch(() => "[]")
     const data = JSON.parse(raw)
     return NextResponse.json(data)
   } catch (err) {
@@ -26,24 +21,14 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  try {
-    await ensureFile()
-    const raw = await fs.readFile(DB_PATH, "utf-8")
-    const logs = JSON.parse(raw)
-    
-    const newLog = await request.json()
-    newLog.id = `log-${Date.now()}`
-    newLog.timestamp = new Date().toISOString()
-    
-    logs.unshift(newLog) // Add to the beginning so newest are first
-    
-    // Optional: Keep only the latest 1000 logs to prevent file bloat
-    if (logs.length > 1000) {
-      logs.length = 1000;
-    }
+  const auth = await requireSession()
+  if (!auth.ok) return auth.response
 
-    await fs.writeFile(DB_PATH, JSON.stringify(logs, null, 2), "utf-8")
-    return NextResponse.json({ success: true, log: newLog })
+  try {
+    // The author always comes from the verified session, never from the body
+    const { action, details } = await request.json()
+    const log = await appendLog({ userId: auth.session.user, action, details })
+    return NextResponse.json({ success: true, log })
   } catch (err) {
     console.error("[POST /api/logs] error:", err)
     return NextResponse.json({ error: "Error al guardar el log" }, { status: 500 })

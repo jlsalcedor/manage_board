@@ -6,11 +6,20 @@ import { API_URL } from "@/lib/utils"
 
 const EMPTY_APP_STATE: AppState = []
 
+// Session expired or was revoked (e.g. password reset): reload so AppShell shows the login
+function handleUnauthorized(res: Response) {
+  if (res.status === 401 || res.status === 403) {
+    window.location.reload()
+    return true
+  }
+  return false
+}
+
 async function fetchAppState(): Promise<AppState> {
   try {
     const res = await fetch(`${API_URL}/api/board`)
     console.log("[v0] fetchAppState response status:", res.status)
-    if (!res.ok) return EMPTY_APP_STATE
+    if (handleUnauthorized(res) || !res.ok) return EMPTY_APP_STATE
     const data = await res.json()
     console.log("[v0] fetchAppState data length:", Array.isArray(data) ? data.length : 0)
     // Check if it's an old BoardState (columns directly) or AppState (boards)
@@ -29,6 +38,7 @@ async function persistAppState(appState: AppState) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(appState),
     })
+    if (handleUnauthorized(res)) return
     const result = await res.json()
     console.log("[v0] persistAppState result:", result)
   } catch (err) {

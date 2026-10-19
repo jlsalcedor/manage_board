@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import fs from "fs/promises"
 import path from "path"
+import { requireSession } from "@/lib/session"
 
 // Images are stored outside public/ because `next start` only serves files
 // that existed in public/ at build time. Legacy uploads in public/uploads are
@@ -22,6 +23,9 @@ const MIME_TYPES: Record<string, string> = {
 }
 
 export async function GET(_request: Request, { params }: { params: Promise<{ file: string }> }) {
+  const auth = await requireSession()
+  if (!auth.ok) return auth.response
+
   const { file } = await params
   const filename = path.basename(file)
 
@@ -32,7 +36,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ fil
       return new NextResponse(buffer, {
         headers: {
           "Content-Type": contentType,
-          "Cache-Control": "public, max-age=31536000, immutable",
+          "Cache-Control": "private, max-age=31536000, immutable",
         },
       })
     } catch {

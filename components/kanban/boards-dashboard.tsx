@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { KanbanBoardData } from "@/lib/kanban-types"
-import { LayoutDashboard, LogOut, Plus, Trash2, Edit2, Calendar } from "lucide-react"
+import { LayoutDashboard, LogOut, Plus, Trash2, Edit2, Calendar, KeyRound } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { AddBoardDialog } from "./add-board-dialog"
 import { EditBoardDialog } from "./edit-board-dialog"
@@ -16,6 +16,7 @@ interface BoardsDashboardProps {
   onDeleteBoard: (boardId: string) => void
   onRenameBoard: (boardId: string, title: string) => void
   onLogout?: () => void
+  onChangePassword?: () => void
   canManage?: boolean
 }
 
@@ -26,6 +27,7 @@ export function BoardsDashboard({
   onDeleteBoard,
   onRenameBoard,
   onLogout,
+  onChangePassword,
   canManage = true,
 }: BoardsDashboardProps) {
   const [showAddDialog, setShowAddDialog] = useState(false)
@@ -48,6 +50,17 @@ export function BoardsDashboard({
           </div>
         </div>
         <div className="flex items-center gap-3">
+          {onChangePassword && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onChangePassword}
+              className="gap-1.5 text-muted-foreground hover:text-foreground"
+            >
+              <KeyRound className="size-3.5" />
+              Cambiar contraseña
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="sm"

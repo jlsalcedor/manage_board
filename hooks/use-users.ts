@@ -6,8 +6,9 @@ import { API_URL } from "@/lib/utils"
 export interface User {
   id: string
   username: string
-  password?: string // only for admin UI
+  password?: string // write-only: sent on create/reset, never returned by the API
   role: string
+  mustChangePassword?: boolean
   assignedBoardIds: string[]
   createdAt: string
 }

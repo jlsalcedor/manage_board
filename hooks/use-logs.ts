@@ -11,7 +11,7 @@ export interface AuditLog {
   timestamp: string
 }
 
-export function useLogs() {
+export function useLogs({ fetchOnMount = true }: { fetchOnMount?: boolean } = {}) {
   const [logs, setLogs] = useState<AuditLog[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
@@ -29,9 +29,11 @@ export function useLogs() {
     }
   }, [])
 
+  // Reading logs is admin-only; components that only write logs skip the fetch
   useEffect(() => {
-    fetchLogs()
-  }, [fetchLogs])
+    if (fetchOnMount) fetchLogs()
+    else setIsLoading(false)
+  }, [fetchLogs, fetchOnMount])
 
   const createLog = async (log: Omit<AuditLog, "id" | "timestamp">) => {
     try {

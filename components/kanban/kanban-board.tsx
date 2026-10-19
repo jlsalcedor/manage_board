@@ -37,10 +37,11 @@ interface KanbanBoardProps {
   updateColumns: (updater: KanbanColumn[] | ((prev: KanbanColumn[]) => KanbanColumn[])) => void
   onBack: () => void
   onLogout?: () => void
+  onChangePassword?: () => void
   session: any
 }
 
-export function KanbanBoard({ board, updateColumns, onBack, onLogout, session }: KanbanBoardProps) {
+export function KanbanBoard({ board, updateColumns, onBack, onLogout, onChangePassword, session }: KanbanBoardProps) {
   const [activeStory, setActiveStory] = useState<UserStory | null>(null)
   const [activeColumn, setActiveColumn] = useState<KanbanColumn | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
@@ -48,7 +49,7 @@ export function KanbanBoard({ board, updateColumns, onBack, onLogout, session }:
   const [editingStory, setEditingStory] = useState<UserStory | null>(null)
   const [showAddColumn, setShowAddColumn] = useState(false)
   
-  const { createLog } = useLogs()
+  const { createLog } = useLogs({ fetchOnMount: false })
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -339,6 +340,7 @@ export function KanbanBoard({ board, updateColumns, onBack, onLogout, session }:
         onReset={handleResetBoard}
         onBack={onBack}
         onLogout={onLogout}
+        onChangePassword={onChangePassword}
         isAdmin={session.role === "admin"}
       />
 

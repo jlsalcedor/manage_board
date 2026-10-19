@@ -8,6 +8,7 @@ import { useKanbanStorage } from "@/hooks/use-kanban-storage"
 import { BoardsDashboard } from "@/components/kanban/boards-dashboard"
 import { API_URL } from "@/lib/utils"
 import { AdminPanel } from "@/components/admin/admin-panel"
+import { ChangePasswordDialog } from "./change-password-dialog"
 
 const KanbanBoard = dynamic(
   () =>
@@ -15,27 +16,15 @@ const KanbanBoard = dynamic(
   { ssr: false }
 )
 
-function getSessionFromCookie(): { isValid: boolean; user?: string; role?: string; assignedBoardIds?: string[] } {
+// The session cookie is httpOnly and signed, so only the server can read and verify it
+async function fetchSession() {
   try {
-    const cookies = document.cookie.split(";").reduce(
-      (acc, cookie) => {
-        const [key, value] = cookie.trim().split("=")
-        acc[key] = decodeURIComponent(value)
-        return acc
-      },
-      {} as Record<string, string>
-    )
-
-    const token = cookies["session_token"]
-    if (!token) return { isValid: false }
-
-    const decoded = JSON.parse(atob(token))
-    if (!decoded.user || !decoded.expiresAt) return { isValid: false }
-
-    const isValid = Date.now() < decoded.expiresAt
-    return { isValid, user: decoded.user, role: decoded.role, assignedBoardIds: decoded.assignedBoardIds || [] }
+    const res = await fetch(`${API_URL}/api/auth/session`, { credentials: "include" })
+    if (!res.ok) return null
+    const data = await res.json()
+    return data.authenticated ? data : null
   } catch {
-    return { isValid: false }
+    return null
   }
 }
 
@@ -44,6 +33,17 @@ function MainApp({ onLogout, session }: { onLogout: () => void, session: any }) 
   // For admin panel
   const [showAdminPanel, setShowAdminPanel] = useState(false)
   const [selectedBoardId, setSelectedBoardId] = useState<string | null>(null)
+  const [showChangePassword, setShowChangePassword] = useState(false)
+
+  // Only standard users manage their own password; the admin's lives in .env
+  const onChangePassword = session.role === "user" ? () => setShowChangePassword(true) : undefined
+  const changePasswordDialog = (
+    <ChangePasswordDialog
+      open={showChangePassword}
+      onOpenChange={setShowChangePassword}
+      onSuccess={() => setShowChangePassword(false)}
+    />
+  )
 
   // Standard users only ever see the boards assigned to them
   const boards =
@@ -74,13 +74,17 @@ function MainApp({ onLogout, session }: { onLogout: () => void, session: any }) 
     }
 
     return (
-      <KanbanBoard
-        board={selectedBoard}
-        updateColumns={(updater) => updateBoardColumns(selectedBoardId, updater)}
-        onBack={() => setSelectedBoardId(null)}
-        onLogout={onLogout}
-        session={session}
-      />
+      <>
+        <KanbanBoard
+          board={selectedBoard}
+          updateColumns={(updater) => updateBoardColumns(selectedBoardId, updater)}
+          onBack={() => setSelectedBoardId(null)}
+          onLogout={onLogout}
+          onChangePassword={onChangePassword}
+          session={session}
+        />
+        {changePasswordDialog}
+      </>
     )
   }
 
@@ -100,8 +104,10 @@ function MainApp({ onLogout, session }: { onLogout: () => void, session: any }) 
         onDeleteBoard={deleteBoard}
         onRenameBoard={renameBoard}
         onLogout={onLogout}
+        onChangePassword={onChangePassword}
         canManage={session.role === "admin"}
       />
+      {changePasswordDialog}
     </div>
   )
 }
@@ -112,9 +118,9 @@ export function AppShell() {
   >("loading")
   const [session, setSession] = useState<any>(null)
 
-  const checkSession = useCallback(() => {
-    const sessionInfo = getSessionFromCookie()
-    if (sessionInfo.isValid) {
+  const checkSession = useCallback(async () => {
+    const sessionInfo = await fetchSession()
+    if (sessionInfo) {
       setSession(sessionInfo)
       setAuthState("authenticated")
     } else {
@@ -127,10 +133,8 @@ export function AppShell() {
     checkSession()
   }, [checkSession])
 
-  const handleLogout = useCallback(() => {
-    document.cookie =
-      "session_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT"
-    fetch(`${API_URL}/api/auth/logout`, {
+  const handleLogout = useCallback(async () => {
+    await fetch(`${API_URL}/api/auth/logout`, {
       method: "POST",
       credentials: "include",
     }).catch(() => {})
@@ -155,6 +159,20 @@ export function AppShell() {
     return <LoginForm onLogin={() => {
       checkSession()
     }} />
+  }
+
+  // Mandatory password change (first login or admin reset): block the app until done
+  if (session.mustChangePassword) {
+    return (
+      <div className="min-h-screen bg-background">
+        <ChangePasswordDialog
+          open
+          required
+          onSuccess={checkSession}
+          onLogout={handleLogout}
+        />
+      </div>
+    )
   }
 
   return <MainApp onLogout={handleLogout} session={session} />

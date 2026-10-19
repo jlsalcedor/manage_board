@@ -1,6 +1,6 @@
 "use client"
 
-import { ArrowLeft, LayoutDashboard, Trash2, Search, LogOut } from "lucide-react"
+import { ArrowLeft, LayoutDashboard, Trash2, Search, LogOut, KeyRound } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 
@@ -12,6 +12,7 @@ interface BoardHeaderProps {
   onReset: () => void
   onBack: () => void
   onLogout?: () => void
+  onChangePassword?: () => void
   isAdmin?: boolean
 }
 
@@ -23,6 +24,7 @@ export function BoardHeader({
   onReset,
   onBack,
   onLogout,
+  onChangePassword,
   isAdmin,
 }: BoardHeaderProps) {
   return (
@@ -65,6 +67,17 @@ export function BoardHeader({
           />
         </div>
         <div className="h-6 w-px bg-border" />
+        {onChangePassword && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onChangePassword}
+            className="gap-1.5 text-muted-foreground hover:text-foreground"
+          >
+            <KeyRound className="size-3.5" />
+            Cambiar contraseña
+          </Button>
+        )}
         <Button
           variant="ghost"
           size="sm"

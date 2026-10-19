@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
-import { Trash2, Edit } from "lucide-react"
+import { Trash2, Edit, Eye, EyeOff } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
 
 export function UsersManager() {
@@ -19,6 +19,7 @@ export function UsersManager() {
 
   const [isOpen, setIsOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [showPassword, setShowPassword] = useState(false)
   
   const [formData, setFormData] = useState({
     username: "",
@@ -29,16 +30,18 @@ export function UsersManager() {
   const resetForm = () => {
     setFormData({ username: "", password: "", assignedBoardIds: [] })
     setEditingId(null)
+    setShowPassword(false)
   }
 
   const handleOpen = (user?: User) => {
     if (user) {
       setFormData({
         username: user.username,
-        password: user.password || "",
+        password: "",
         assignedBoardIds: user.assignedBoardIds || []
       })
       setEditingId(user.id)
+      setShowPassword(false)
     } else {
       resetForm()
     }
@@ -56,17 +59,24 @@ export function UsersManager() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!formData.username || !formData.password) {
+    // On edit an empty password means "keep the current one"
+    if (!formData.username || (!editingId && !formData.password)) {
       toast({ title: "Error", description: "Usuario y contraseña son obligatorios", variant: "destructive" })
       return
     }
 
-    const res = editingId 
-      ? await updateUser(editingId, formData)
+    const { password, ...rest } = formData
+    const res = editingId
+      ? await updateUser(editingId, password ? formData : rest)
       : await createUser(formData)
 
     if (res.success) {
-      toast({ title: "Éxito", description: `Usuario ${editingId ? 'actualizado' : 'creado'} correctamente` })
+      const description = editingId
+        ? password
+          ? "Usuario actualizado. Deberá cambiar la contraseña en su próximo ingreso"
+          : "Usuario actualizado correctamente"
+        : "Usuario creado. Deberá cambiar la contraseña en su primer ingreso"
+      toast({ title: "Éxito", description })
       setIsOpen(false)
     } else {
       toast({ title: "Error", description: res.error, variant: "destructive" })
@@ -106,13 +116,29 @@ export function UsersManager() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password">Contraseña</Label>
-                <Input 
-                  id="password" 
-                  type="text" 
-                  value={formData.password} 
-                  onChange={e => setFormData({...formData, password: e.target.value})} 
-                />
+                <Label htmlFor="password">{editingId ? "Nueva contraseña" : "Contraseña"}</Label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    value={formData.password}
+                    onChange={e => setFormData({...formData, password: e.target.value})}
+                    placeholder={editingId ? "Dejar vacío para no cambiar" : "Contraseña temporal"}
+                    className="pr-10"
+                    autoComplete="new-password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                  >
+                    {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                  </button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  El usuario deberá cambiarla al ingresar.
+                </p>
               </div>
               <div className="space-y-2">
                 <Label>Tableros Asignados</Label>
@@ -148,7 +174,6 @@ export function UsersManager() {
             <TableHeader>
               <TableRow>
                 <TableHead>Usuario</TableHead>
-                <TableHead>Contraseña</TableHead>
                 <TableHead>Tableros</TableHead>
                 <TableHead>Fecha Creación</TableHead>
                 <TableHead className="text-right">Acciones</TableHead>
@@ -162,7 +187,6 @@ export function UsersManager() {
                 return (
                   <TableRow key={user.id}>
                     <TableCell className="font-medium">{user.username}</TableCell>
-                    <TableCell>{user.password}</TableCell>
                     <TableCell>{assignedTitles.length > 0 ? assignedTitles.join(", ") : "Ninguno"}</TableCell>
                     <TableCell>{new Date(user.createdAt).toLocaleDateString()}</TableCell>
                     <TableCell className="text-right">
@@ -178,7 +202,7 @@ export function UsersManager() {
               })}
               {users.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-4">No hay usuarios creados</TableCell>
+                  <TableCell colSpan={4} className="text-center py-4">No hay usuarios creados</TableCell>
                 </TableRow>
               )}
             </TableBody>
